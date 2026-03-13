@@ -589,21 +589,26 @@
         <button @click="showCart = false" class="text-slate-400 text-2xl"><i class="fa-solid fa-times"></i></button>
       </div>
       <div class="space-y-4">
-        <template x-for="(ci, idx) in cart">
-          <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border">
-            <div class="flex-1">
-              <p class="font-black text-sm" x-text="ci.name"></p>
-              <div class="flex items-center gap-2 mt-2">
-                <input type="number" x-model.number="ci.price"
-                  class="w-20 p-1 bg-white border rounded text-xs font-bold text-center" step="0.01">
-                <span class="text-xs text-slate-500">ج ×</span>
-                <span class="text-xs font-bold" x-text="ci.qty"></span>
-              </div>
+      <template x-for="(ci, idx) in cart">
+    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border mb-2">
+        <div class="flex-1">
+            <p class="font-black text-sm text-slate-800" x-text="ci.name"></p>
+            <div class="flex items-center gap-3 mt-2">
+                <div class="flex items-center bg-white border rounded-lg px-2 py-1">
+                    <span class="text-[10px] text-slate-400 ml-1">السعر:</span>
+                    <input type="number" x-model.number="ci.price" class="w-16 text-xs font-bold outline-none text-blue-600">
+                </div>
+                <div class="flex items-center bg-white border rounded-lg px-2 py-1">
+                    <span class="text-[10px] text-slate-400 ml-1">العدد:</span>
+                    <input type="number" x-model.number="ci.qty" min="1" class="w-12 text-xs font-bold outline-none text-emerald-600 text-center">
+                </div>
             </div>
-            <button @click="cart.splice(idx, 1)" class="w-10 h-10 bg-blue-100 text-blue-500 rounded-xl"><i
-                class="fa-solid fa-trash"></i></button>
-          </div>
-        </template>
+        </div>
+        <button @click="cart.splice(idx, 1)" class="p-2 text-rose-500 hover:bg-rose-50 rounded-full transition-colors">
+            <i class="fa-solid fa-trash-can"></i>
+        </button>
+    </div>
+</template>
       </div>
       <div class="border-t pt-6 space-y-4">
         <div class="flex justify-between text-2xl font-black text-slate-800">
