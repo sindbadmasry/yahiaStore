@@ -2,7 +2,7 @@
   "name": "STEP - إدارة الأعمال",
   "short_name": "STEP",
   "description": "تطبيق STEP لإدارة المخزن والصيانة والمحافظ",
-  "start_url": "/",
+  "start_url": "https://sindbadmasry.github.io/yahiaStore/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
