@@ -1276,7 +1276,15 @@
             return matchesSearch && matchesTab;
           });
         },
-
+    get filteredMaintenance() {
+    if (!this.data.Maintenance) return [];
+    
+    return this.data.Maintenance.filter(m => {
+        // التأكد من تطابق حالة الجهاز مع الفلتر النشط
+        const status = String(m.Status || '').trim();
+        return status === this.mFilter;
+    }).reverse(); // إضافة reverse() اختيارية لعرض أحدث الأجهزة أولاً
+},
         get filteredWallets() {
           const q = this.searchWallet.toLowerCase();
           if (!q) return this.dynamicWallets;
