@@ -450,72 +450,151 @@
           </div>
         </div>
 
-        <div x-show="currentTab === 'pos'" class="space-y-4">
-          <!-- أزرار استلام كاش وصادر -->
-          <div class="flex gap-2">
-            <button @click="openWalletTxModal('وارد')"
-              class="bg-emerald-500 text-[10px] text-white p-3 rounded-3xl font-black shadow-lg flex items-center justify-center gap-1 active:scale-95 transition-all">
-              <i class="fa-solid fa-arrow-down text-sm"></i> استلام كاش
-            </button>
-            <button @click="openWalletTxModal('صادر')"
-              class="bg-rose-500 text-[10px] text-white p-3 rounded-3xl font-black shadow-lg flex items-center justify-center gap-1 active:scale-95 transition-all">
-              <i class="fa-solid fa-arrow-up text-sm"></i> تحويل كاش
-            </button>
-            <button @click="openAddCustomerModal()"
-              class="bg-blue-500 text-[10px] text-white p-3 rounded-3xl font-black shadow-lg flex items-center justify-center gap-1 active:scale-95 transition-all">
-              <i class="fa-solid fa-user-plus text-sm"></i> عميل جديد
-            </button>
-            <button @click="openMaintenanceModal()"
-              class="bg-amber-500 text-[10px] text-white p-3 rounded-3xl font-black shadow-lg flex items-center justify-center gap-1 active:scale-95 transition-all">
-              <i class="fa-solid fa-plus-circle ml-2"></i> استلام صيانة
-            </button>
-          </div>
+        <div x-show="currentTab === 'pos'" class="space-y-6">
 
-          <div class="flex gap-2">
-            <button @click="posFilter='all'"
-              :class="posFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500'"
-              class="flex-1 py-3 rounded-2xl text-[10px] font-black shadow-sm">
-              المنتجات
-            </button>
-            <button @click="posFilter='new'"
-              :class="posFilter === 'new' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500'"
-              class="flex-1 py-3 rounded-2xl text-[10px] font-black shadow-sm">
-              الهواتف الجديدة
-            </button>
-            <button @click="posFilter='used'"
-              :class="posFilter === 'used' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500'"
-              class="flex-1 py-3 rounded-2xl text-[10px] font-black shadow-sm">
-              المستعملة
-            </button>
-          </div>
+<!-- القسم 1 : الكاش -->
+<div class="bg-white p-4 rounded-3xl shadow-sm border">
+<h3 class="font-black text-slate-700 mb-3 border-b pb-2">
+<i class="fa-solid fa-money-bill-wave ml-2 text-emerald-600"></i>
+الكاش
+</h3>
+
+<div class="grid grid-cols-2 gap-3">
+
+<button
+@click="openWalletTxModal('وارد')"
+class="bg-emerald-500 text-white p-4 rounded-2xl font-black shadow">
+استلام كاش
+</button>
+
+<button
+@click="openWalletTxModal('صادر')"
+class="bg-rose-500 text-white p-4 rounded-2xl font-black shadow">
+تحويل كاش
+</button>
+
+</div>
+</div>
 
 
+<!-- القسم 2 : الموبايلات -->
 
-          <div class="relative">
-            <input type="text" x-model="search" placeholder="ابحث عن منتج أو باركود..."
-              class="w-full p-4 bg-white border rounded-2xl outline-none font-bold shadow-sm focus:ring-2 ring-blue-500">
-            <i class="fa-solid fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"></i>
-          </div>
+<div class="bg-white p-4 rounded-3xl shadow-sm border">
 
-          <div class="grid grid-cols-2 gap-3">
-            <template x-for="item in filteredInventory">
-              <div @click="addToCart(item)"
-                class="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm active:scale-95 transition-all relative overflow-hidden cursor-pointer hover:border-blue-300">
-                <template x-if="item.Category && item.Category.includes('هاتف')">
-                  <span
-                    class="absolute top-0 right-0 bg-blue-600 text-white text-[8px] px-2 py-1 rounded-bl-xl font-black">هاتف</span>
-                </template>
-                <h4 class="font-black text-xs truncate" x-text="item.Product_Name"></h4>
-                <div class="mt-3 flex justify-between items-center">
-                  <span class="text-blue-600 font-black text-sm tabular-nums" x-text="item.Selling_Price + ' ج'"></span>
-                  <span class="text-[9px] font-bold px-2 py-0.5 rounded-lg"
-                    :class="item.Stock > 0 ? 'bg-blue-50 text-blue-600' : 'bg-blue-50 text-blue-600'"
-                    x-text="item.Stock > 0 ? 'مخزن: ' + item.Stock : 'نفد'"></span>
-                </div>
-              </div>
-            </template>
-          </div>
-        </div>
+<h3 class="font-black text-slate-700 mb-3 border-b pb-2">
+<i class="fa-solid fa-mobile-screen ml-2 text-blue-600"></i>
+الموبايلات
+</h3>
+
+<div class="grid grid-cols-2 gap-3">
+
+<button
+@click="openProductModal('هاتف جديد')"
+class="bg-blue-500 text-white p-4 rounded-2xl font-black shadow">
+شراء هاتف
+</button>
+
+<button
+@click="posFilter='new'"
+class="bg-slate-100 text-slate-700 p-4 rounded-2xl font-black">
+بيع جديد
+</button>
+
+<button
+@click="posFilter='used'"
+class="bg-amber-500 text-white p-4 rounded-2xl font-black">
+بيع مستعمل
+</button>
+
+</div>
+
+</div>
+
+
+<!-- القسم 3 : الاكسسوار -->
+
+<div class="bg-white p-4 rounded-3xl shadow-sm border">
+
+<h3 class="font-black text-slate-700 mb-3 border-b pb-2">
+<i class="fa-solid fa-headphones ml-2 text-purple-600"></i>
+الاكسسوار
+</h3>
+
+<div class="grid grid-cols-2 gap-3">
+
+<button
+@click="openProductModal('صنف عام')"
+class="bg-purple-500 text-white p-4 rounded-2xl font-black">
+شراء
+</button>
+
+<button
+@click="posFilter='all'"
+class="bg-slate-100 text-slate-700 p-4 rounded-2xl font-black">
+بيع
+</button>
+
+</div>
+
+</div>
+
+
+<!-- القسم 4 : الصيانة -->
+
+<div class="bg-white p-4 rounded-3xl shadow-sm border">
+
+<h3 class="font-black text-slate-700 mb-3 border-b pb-2">
+<i class="fa-solid fa-screwdriver-wrench ml-2 text-amber-600"></i>
+الصيانة
+</h3>
+
+<div class="grid grid-cols-2 gap-3">
+
+<button
+@click="openMaintenanceModal()"
+class="bg-amber-500 text-white p-4 rounded-2xl font-black">
+استلام صيانة جديدة
+</button>
+
+<button
+@click="currentTab='maintenance'"
+class="bg-slate-100 text-slate-700 p-4 rounded-2xl font-black">
+تسليم صيانة
+</button>
+
+</div>
+
+</div>
+
+
+<!-- القسم 5 : العملاء -->
+
+<div class="bg-white p-4 rounded-3xl shadow-sm border">
+
+<h3 class="font-black text-slate-700 mb-3 border-b pb-2">
+<i class="fa-solid fa-users ml-2 text-blue-600"></i>
+العملاء
+</h3>
+
+<div class="grid grid-cols-2 gap-3">
+
+<button
+@click="openAddCustomerModal()"
+class="bg-blue-500 text-white p-4 rounded-2xl font-black">
+إضافة عميل
+</button>
+
+<button
+@click="showCustomers()"
+class="bg-slate-100 text-slate-700 p-4 rounded-2xl font-black">
+كشف العملاء
+</button>
+
+</div>
+
+</div>
+
+</div>
 
         <div x-show="currentTab === 'inventory'" class="space-y-4">
           <div class="grid grid-cols-3 gap-2">
