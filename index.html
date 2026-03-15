@@ -4,19 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#3b82f6">
-<meta name="description" content="تطبيق STEP لإدارة الأعمال">
+<meta name="description" content=" 2m ">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="STEP">
-<title>Abo Yahia | STEP</title>
+<meta name="apple-mobile-web-app-title" content="2M">
+<title>Abo Yahia | 2M</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-
 <script src="https://cdn.tailwindcss.com"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -31,7 +29,6 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 </style>
 </head>
 <body x-data="erpApp()" x-init="init()" class="bg-slate-50 text-slate-900 min-h-screen pb-24 transition-colors duration-300">
-
 <div x-show="loading" class="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-md flex flex-col items-center justify-center text-white">
 <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mb-4"></div>
 <p class="font-black animate-pulse">جاري المعالجة...</p>
@@ -43,7 +40,7 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 <div class="w-24 h-24 bg-blue-600 rounded-3xl mx-auto flex items-center justify-center text-white text-4xl mb-4 shadow-xl shadow-blue-200">
 <i class="fa-solid fa-rocket"></i>
 </div>
-<h2 class="text-3xl font-black text-slate-800">STEP</h2>
+<h2 class="text-3xl font-black text-slate-800">2M</h2>
 <p class="text-slate-400 font-bold">تسجيل الدخول </p>
 </div>
 <div class="space-y-4">
@@ -60,12 +57,9 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 <div class="flex items-center gap-3">
 <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="fa-solid fa-bolt"></i></div>
 <div>
-<h1 class="font-black text-lg leading-tight" :class="user.role === 'admin' ? 'cursor-pointer' : ''" @click="user.role === 'admin' ? openAddUserModal() : null">STEP</h1>
+<h1 class="font-black text-lg leading-tight" :class="user.role === 'admin' ? 'cursor-pointer' : ''" @click="user.role === 'admin' ? openAddUserModal() : null">2M</h1>
 <p class="text-[10px] font-bold text-blue-600" x-text="user.username + ' (' + (user.role == 'admin' ? 'مدير' : 'موظف') + ')'"></p>
 </div>
-<button x-show="user.role === 'admin'" @click="openAddExpenseModal()" class="mr-2 bg-red-50 text-red-600 px-3 py-1.5 rounded-xl text-[10px] font-black shadow-sm flex items-center gap-1 active:scale-95 transition-all">
-<i class="fa-solid fa-money-bill-transfer"></i> المصروفات
-</button>
 </div>
 <div class="flex gap-2">
 <button @click="fetchData()" class="p-2 bg-blue-50 text-blue-600 rounded-xl"><i class="fa-solid fa-sync" :class="loading ? 'animate-spin' : ''"></i></button>
@@ -179,7 +173,6 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 </div>
 </div>
 </div>
-
 </div>
 
 <div x-show="currentTab === 'reports' && user.role !== 'admin'" class="flex flex-col items-center justify-center py-20 text-slate-400">
@@ -209,10 +202,12 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 <input type="text" x-model="searchWallet" placeholder="اكتب اسم المحفظة" class="w-full p-2 bg-slate-50 border rounded-xl text-[10px] font-bold outline-none" />
 </div>
 </div>
+
 <div class="grid grid-cols-2 gap-3 mb-4">
 <button @click="openWalletTxModal('وارد')" class="bg-emerald-500 text-white p-4 rounded-3xl font-black shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all"><i class="fa-solid fa-arrow-down"></i> استلام كاش</button>
 <button @click="openWalletTxModal('صادر')" class="bg-rose-500 text-white p-4 rounded-3xl font-black shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all"><i class="fa-solid fa-arrow-up"></i> تحويل كاش</button>
 </div>
+
 <div class="grid grid-cols-1 gap-3">
 <template x-for="w in filteredWallets">
 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3">
@@ -247,7 +242,7 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 </div>
 </div>
 <div x-show="Math.max(getLimitPercent(w.name, w.limit, 'outgoing'), getLimitPercent(w.name, w.limit, 'incoming')) >= 95" class="text-[10px] text-blue-700 bg-blue-100 px-3 py-2 rounded-xl font-black text-center">
-⚠️     وصلت إلى 95% أو أكثر من ليميت هذه المحفظة
+⚠️      وصلت إلى 95% أو أكثر من ليميت هذه المحفظة
 </div>
 </div>
 </template>
@@ -322,6 +317,13 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 <button @click="showCustomers()" class="bg-teal-600 text-white p-4 rounded-2xl font-black text-xs shadow-md active:scale-95 transition-transform"><i class="fa-solid fa-users ml-1"></i> كشف العملاء</button>
 </div>
 </div>
+<div class="bg-white p-4 rounded-3xl border shadow-sm" x-show="user.role === 'admin'">
+<h3 class="font-black text-red-600 mb-3 text-sm"><i class="fa-solid fa-money-bill-transfer ml-1"></i> المصروفات</h3>
+<div class="grid grid-cols-2 gap-2">
+<button @click="openAddExpenseModal()" class="bg-red-50 text-red-700 p-4 rounded-2xl font-black text-xs hover:bg-red-100 shadow-sm"><i class="fa-solid fa-plus ml-1"></i> إضافة مصروف</button>
+<button @click="showExpensesReportsModal = true" class="bg-red-600 text-white p-4 rounded-2xl font-black text-xs shadow-md active:scale-95 transition-transform"><i class="fa-solid fa-chart-bar ml-1"></i> تقارير المصروفات</button>
+</div>
+</div>
 </div>
 
 <div x-show="currentTab === 'inventory'" class="space-y-4">
@@ -330,6 +332,12 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 <button @click="openProductModal('هاتف جديد')" class="p-3 bg-blue-50 text-blue-600 rounded-2xl text-[10px] font-black shadow-sm active:scale-95">+ هاتف جديد</button>
 <button @click="openProductModal('هاتف مستعمل')" class="p-3 bg-blue-50 text-blue-600 rounded-2xl text-[10px] font-black shadow-sm active:scale-95">+ هاتف مستعمل</button>
 </div>
+
+<div class="bg-white p-4 rounded-3xl border shadow-sm">
+<h3 class="font-black text-amber-600 mb-3 text-sm"><i class="fa-solid fa-ranking-star ml-1"></i> الأكثر مبيعاً</h3>
+<button @click="showBestSellersModal = true" class="w-full bg-amber-50 text-amber-700 p-3 rounded-2xl font-black text-xs hover:bg-amber-100 shadow-sm transition-all"><i class="fa-solid fa-star ml-1"></i> عرض قائمة المنتجات الأكثر مبيعاً</button>
+</div>
+
 <div class="flex gap-2 mb-2">
 <div class="relative flex-1">
 <input type="text" x-model="invSearch" placeholder="ابحث باسم المنتج أو الباركود..." class="w-full p-3 pr-10 bg-white border rounded-xl text-[10px] font-bold outline-none shadow-sm">
@@ -368,7 +376,7 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 </div>
 </main>
 
-<button x-show="cart.length > 0" @click="showCart = true" class="fixed bottom-24 left-6 w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center animate-bounce z-50">
+<button x-show="cart.length > 0" @click="showCart = true" class="fixed bottom-24 left-6 w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center animate-bounce z-[500]">
 <i class="fa-solid fa-shopping-cart text-xl"></i>
 <span class="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full text-[10px] font-black flex items-center justify-center border-2 border-white tabular-nums" x-text="cart.length"></span>
 </button>
@@ -424,8 +432,8 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 </div>
 </div>
 
-<div x-show="showCart" x-cloak class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-end justify-center">
-<div class="w-full max-w-lg bg-white rounded-t-[3rem] p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+<div x-show="showCart" x-cloak class="fixed inset-0 z-[350] bg-black/60 backdrop-blur-sm flex items-end justify-center">
+<div class="w-full max-w-lg bg-white rounded-t-[3rem] p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar relative">
 <div class="flex justify-between items-center">
 <h3 class="text-xl font-black">مراجعة السلة</h3>
 <button @click="showCart = false" class="text-slate-400 text-2xl"><i class="fa-solid fa-times"></i></button>
@@ -450,16 +458,16 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 </div>
 </template>
 </div>
-<div class="border-t pt-6 space-y-4">
+<div class="border-t pt-6 space-y-4 relative">
 <div class="flex justify-between text-xl font-black text-slate-800">
 <span>الإجمالي</span>
 <span class="tabular-nums" x-text="cartTotal.toLocaleString() + ' ج'"></span>
 </div>
 <div class="relative" x-data="{ showDrop: false }">
 <input type="text" x-model="checkout.customer" @input="customerSearch = $event.target.value; showDrop = true" @click.away="showDrop = false" placeholder="اسم العميل (اختياري)" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-<div x-show="showDrop && filteredCustomers.length > 0 && checkout.customer" class="absolute top-full left-0 right-0 bg-white border rounded-2xl shadow-lg z-10 max-h-40 overflow-y-auto mt-1">
+<div x-show="showDrop && filteredCustomers.length > 0 && checkout.customer" class="absolute bottom-full mb-1 left-0 right-0 bg-white border rounded-2xl shadow-2xl z-[100] max-h-40 overflow-y-auto">
 <template x-for="customer in filteredCustomers">
-<div @click="checkout.customer = customer; customerSearch = ''; showDrop = false" class="p-3 hover:bg-slate-50 cursor-pointer border-b last:border-b-0" x-text="customer"></div>
+<div @click="checkout.customer = customer; customerSearch = ''; showDrop = false" class="p-3 hover:bg-slate-50 cursor-pointer border-b last:border-b-0 font-bold" x-text="customer"></div>
 </template>
 </div>
 </div>
@@ -655,6 +663,27 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 </div>
 </div>
 
+<div x-show="showBestSellersModal" x-cloak class="fixed inset-0 z-[400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+<div class="w-full max-w-lg bg-white rounded-[2.5rem] p-6 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-xl font-black text-amber-600"><i class="fa-solid fa-star ml-2"></i>الأكثر مبيعاً</h3>
+<button @click="showBestSellersModal = false" class="text-slate-400 text-2xl"><i class="fa-solid fa-times"></i></button>
+</div>
+<div class="space-y-3">
+<template x-for="(item, index) in bestSellers">
+<div class="bg-amber-50 p-4 rounded-2xl border flex justify-between items-center">
+<div class="flex gap-3 items-center">
+<span class="w-8 h-8 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center font-black" x-text="index + 1"></span>
+<p class="font-black text-sm text-slate-800 line-clamp-1" x-text="item.name"></p>
+</div>
+<p class="text-lg font-black tabular-nums text-amber-700 whitespace-nowrap" x-text="item.qty + ' قطعة'"></p>
+</div>
+</template>
+<div x-show="bestSellers.length === 0" class="text-center py-10 text-slate-400 font-bold">لا توجد مبيعات مسجلة حتى الآن</div>
+</div>
+</div>
+</div>
+
 <div x-show="showInvoicesModal" x-cloak class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
 <div class="w-full max-w-lg bg-white rounded-[2.5rem] p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
 <div class="flex justify-between items-center mb-6">
@@ -759,6 +788,20 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
 </div>
 </template>
 <div x-show="debtorInvoices.length === 0" class="text-center py-10 text-slate-400 font-bold">لا توجد فواتير</div>
+</div>
+</div>
+</div>
+
+<div x-show="editPaymentModal" x-cloak class="fixed inset-0 z-[400] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+<div class="w-full max-w-sm bg-white rounded-[2.5rem] p-6 shadow-2xl">
+<h3 class="text-xl font-black mb-6 text-blue-600 border-b pb-4">تعديل الدفع للمديونية</h3>
+<div class="space-y-4">
+<label class="block text-xs font-bold text-slate-500 text-center">المدفوع الكلي حالياً (سيتم تحديثه):</label>
+<input type="number" x-model.number="editPaymentForm.paid" placeholder="إجمالي ما تم دفعه" class="w-full p-4 bg-blue-50 border border-blue-100 rounded-2xl font-black outline-none text-center text-2xl text-blue-700 tabular-nums">
+<div class="flex gap-2 pt-4">
+<button @click="updateSalePayment()" class="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg">حفظ الدفع</button>
+<button @click="editPaymentModal = false" class="px-6 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black">إلغاء</button>
+</div>
 </div>
 </div>
 </div>
@@ -932,10 +975,10 @@ search: '', invSearch: '', posFilter: 'all', invFilter: 'all', searchWallet: '',
 data: { Inventory: [], Maintenance: [], Wallets: [], Sales: [], Settings: [], Users: [], Expenses: [] },
 cart: [], showCart: false,
 checkout: { customer: '', type: 'Cash', paid: '', walletName: '', isPurchase: false, updateCashOrWallet: true },
-filterDate: { 
-    from: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-01', 
-    to: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0'), 
-    month: '' 
+filterDate: {
+from: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-01',
+to: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0'),
+month: ''
 },
 showPosProductsModal: false, showProductModal: false, isEditingProduct: false,
 showWalletTxModal: false, showMaintenanceModal: false, showEditMaintenanceModal: false, showAllMaintenanceModal: false,
@@ -954,6 +997,7 @@ modalAddWallet: { show: false, name: '', limit: 200000 }, modalUpdateCash: { sho
 showAddExpenseModal: false, showExpensesReportsModal: false,
 expenseForm: { description: '', amount: '', notes: '', paymentMethod: 'Cash', walletName: '', updateCashOrWallet: true },
 showScannerModal: false, scanTarget: '', html5QrcodeScanner: null,
+showBestSellersModal: false,
 tabs: [
 { id: 'pos', name: 'الرئيسية', icon: 'fa-solid fa-cash-register' },
 { id: 'reports', name: 'التقارير', icon: 'fa-solid fa-chart-line' },
@@ -962,12 +1006,12 @@ tabs: [
 { id: 'wallets', name: 'المحافظ', icon: 'fa-solid fa-wallet' }
 ],
 getLocalDate() {
-    const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const d = new Date();
+return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 },
 getFirstDayOfMonth() {
-    const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
+const d = new Date();
+return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
 },
 openScanner(target) {
 this.scanTarget = target;
@@ -1010,25 +1054,24 @@ if(existing.Category && existing.Category.includes('هاتف')) { this.pForm.Mod
 },
 showConfirm(message, callback) { this.modalConfirm = { show: true, message: message, onConfirm: callback }; },
 executeConfirm() { if(this.modalConfirm.onConfirm) this.modalConfirm.onConfirm(); this.modalConfirm.show = false; },
-
-setTodayFilter() { 
-    const today = this.getLocalDate(); 
-    this.filterDate.from = today; 
-    this.filterDate.to = today; 
-    this.filterDate.month = ''; 
+setTodayFilter() {
+const today = this.getLocalDate();
+this.filterDate.from = today;
+this.filterDate.to = today;
+this.filterDate.month = '';
 },
-setMonthFilter() { 
-    const d = new Date(); 
-    this.filterDate.from = this.getFirstDayOfMonth(); 
-    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    this.filterDate.to = lastDay.getFullYear() + '-' + String(lastDay.getMonth() + 1).padStart(2, '0') + '-' + String(lastDay.getDate()).padStart(2, '0'); 
-    this.filterDate.month = ''; 
+setMonthFilter() {
+const d = new Date();
+this.filterDate.from = this.getFirstDayOfMonth();
+const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+this.filterDate.to = lastDay.getFullYear() + '-' + String(lastDay.getMonth() + 1).padStart(2, '0') + '-' + String(lastDay.getDate()).padStart(2, '0');
+this.filterDate.month = '';
 },
-isDateInRange(dateString) { 
-    if (!dateString) return false; 
-    const date = new Date(dateString);
-    const dStr = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0'); 
-    return dStr >= this.filterDate.from && dStr <= this.filterDate.to; 
+isDateInRange(dateString) {
+if (!dateString) return false;
+const date = new Date(dateString);
+const dStr = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+return dStr >= this.filterDate.from && dStr <= this.filterDate.to;
 },
 async callApi(action, dataObj = {}) {
 if (!API_URL.includes("script.google.com")) { alert("يرجى تعيين رابط الـ API_URL بشكل صحيح."); return { success: false }; }
@@ -1102,6 +1145,19 @@ return this.data.Maintenance.filter(m => { const status = String(m.Status || '')
 get filteredWallets() {
 const q = this.searchWallet.toLowerCase(); if (!q) return this.dynamicWallets;
 return this.dynamicWallets.filter(w => String(w.name || '').toLowerCase().includes(q));
+},
+get bestSellers() {
+let salesCount = {};
+(this.data.Sales || []).forEach(sale => {
+try {
+let items = JSON.parse(sale.Items_JSON || "[]");
+items.forEach(item => {
+if (!salesCount[item.code]) { salesCount[item.code] = { name: item.name, qty: 0 }; }
+salesCount[item.code].qty += Number(item.qty);
+});
+} catch (e) {}
+});
+return Object.values(salesCount).sort((a, b) => b.qty - a.qty);
 },
 addToCart(product) {
 if (product.Stock <= 0) return alert('هذا المنتج نفد من المخزن!');
