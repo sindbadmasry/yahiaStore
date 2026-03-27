@@ -36,6 +36,150 @@
 </style>
 </head>
 <body x-data="erpApp()" x-init="init()" class="text-slate-800 min-h-screen pb-28">
+<div x-show="editPaymentModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak>
+    <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
+        <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+            <i class="fas fa-money-bill-wave text-green-600"></i> تحصيل مبلغ من مديونية
+        </h3>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold mb-1">المبلغ المراد تحصيله حالياً</label>
+                <input type="number" x-model="editPaymentForm.paid" class="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button @click="updateSalePayment()" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition">تأكيد التحصيل</button>
+                <button @click="editPaymentModal = false" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold">إلغاء</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div x-show="showWalletTxModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak>
+    <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl border-t-4 border-blue-600">
+        <h3 class="text-xl font-bold mb-4">إجراء عملية مالية</h3>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm mb-1">نوع العملية</label>
+                <select x-model="walletTxForm.type" class="w-full p-3 border rounded-xl bg-gray-50">
+                    <option value="Deposit">إيداع (وارد)</option>
+                    <option value="Withdraw">سحب (صادر)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm mb-1">المبلغ</label>
+                <input type="number" x-model="walletTxForm.amount" class="w-full p-3 border rounded-xl bg-gray-50">
+            </div>
+            <div>
+                <label class="block text-sm mb-1">ملاحظات (السبب)</label>
+                <input type="text" x-model="walletTxForm.note" placeholder="مثلاً: توريد مبيعات، سحب مصاريف" class="w-full p-3 border rounded-xl bg-gray-50">
+            </div>
+            <button @click="submitWalletTx()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mt-4 shadow-lg hover:bg-blue-700">تنفيذ العملية</button>
+            <button @click="showWalletTxModal = false" class="w-full bg-gray-100 text-gray-500 py-2 rounded-xl mt-2">إغلاق</button>
+        </div>
+    </div>
+</div>
+
+<div x-show="modalAddWallet" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" x-cloak>
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6">
+        <h3 class="text-lg font-bold mb-4">إضافة محفظة إلكترونية / بنكية</h3>
+        <div class="space-y-3">
+            <input type="text" x-model="walletForm.name" placeholder="اسم المحفظة (فودافون كاش، بنك...)" class="w-full p-3 border rounded-xl">
+            <input type="number" x-model="walletForm.balance" placeholder="الرصيد الافتتاحي" class="w-full p-3 border rounded-xl">
+            <input type="number" x-model="walletForm.limit" placeholder="الحد الأقصى للسحب الشهري" class="w-full p-3 border rounded-xl">
+            <button @click="saveWallet()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">حفظ المحفظة</button>
+            <button @click="modalAddWallet = false" class="w-full text-gray-400 py-2">تراجع</button>
+        </div>
+    </div>
+</div>
+
+<div x-show="showEditMaintenanceModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak>
+    <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl h-[80vh] overflow-y-auto">
+        <h3 class="text-xl font-bold mb-4">تحديث حالة تذكرة الصيانة</h3>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm mb-1">الحالة الحالية</label>
+                <select x-model="mForm.Status" class="w-full p-3 border rounded-xl bg-gray-50 font-bold">
+                    <option value="Pending">قيد الانتظار</option>
+                    <option value="Checking">جاري الفحص</option>
+                    <option value="PartsNeeded">انتظار قطع غيار</option>
+                    <option value="Repaired">تم الإصلاح ✅</option>
+                    <option value="Delivered">تم التسليم للعميل 🤝</option>
+                    <option value="Cancelled">مرتجع (لم يتم الإصلاح)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm mb-1">العطل المكتشف / ما تم تنفيذه</label>
+                <textarea x-model="mForm.Problem" class="w-full p-3 border rounded-xl bg-gray-50 h-24"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm mb-1">التكلفة النهائية (قطع غيار + مصنعية)</label>
+                <input type="number" x-model="mForm.Cost" class="w-full p-3 border rounded-xl bg-gray-50 text-red-600 font-bold">
+            </div>
+            <div class="flex gap-2 p-2 bg-blue-50 rounded-xl">
+                 <input type="checkbox" x-model="mForm.isPaid" id="mPaid">
+                 <label for="mPaid" class="text-blue-800 font-bold italic">تم استلام المبلغ بالكامل من العميل</label>
+            </div>
+            <button @click="saveMaintenance()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-blue-700">حفظ التغييرات</button>
+            <button @click="showEditMaintenanceModal = false" class="w-full text-gray-500 py-2">إغلاق بدون حفظ</button>
+        </div>
+    </div>
+</div>
+
+<div x-show="showAddExpenseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" x-cloak>
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6">
+        <h3 class="text-lg font-bold mb-4 text-red-600 font-black italic">تسجيل مصروف جديد (صادر)</h3>
+        <div class="space-y-3">
+            <input type="text" x-model="expenseForm.category" placeholder="البند (إيجار، كهرباء، شحن...)" class="w-full p-3 border rounded-xl">
+            <input type="number" x-model="expenseForm.amount" placeholder="المبلغ" class="w-full p-3 border rounded-xl">
+            <input type="text" x-model="expenseForm.note" placeholder="ملاحظات إضافية" class="w-full p-3 border rounded-xl">
+            <button @click="saveExpense()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold shadow-lg">خصم من الكاش</button>
+            <button @click="showAddExpenseModal = false" class="w-full text-gray-400 py-2">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div x-show="modalUpdateCash" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" x-cloak>
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6 border-t-8 border-yellow-500">
+        <h3 class="text-lg font-bold mb-2 text-center">جرد وتعديل رصيد الخزينة</h3>
+        <p class="text-xs text-gray-500 text-center mb-4 italic">تستخدم هذه النافذة لتصحيح رصيد الدرج يدوياً في حالة العجز أو الزيادة.</p>
+        <div class="space-y-3">
+            <label class="text-xs font-bold text-gray-400">الرصيد الفعلي الموجود في الدرج الآن</label>
+            <input type="number" x-model="shopCashForm.amount" class="w-full p-4 border rounded-2xl text-center text-2xl font-black bg-gray-50">
+            <button @click="saveShopCash()" class="w-full bg-yellow-500 text-white py-4 rounded-2xl font-bold shadow-lg">تحديث الرصيد</button>
+            <button @click="modalUpdateCash = false" class="w-full text-gray-400 py-2">تراجع</button>
+        </div>
+    </div>
+</div>
+
+<div x-show="showAddUserModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" x-cloak>
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6">
+        <h3 class="text-lg font-bold mb-4">إضافة موظف جديد للنظام</h3>
+        <div class="space-y-3">
+            <input type="text" x-model="userForm.username" placeholder="اسم المستخدم (Username)" class="w-full p-3 border rounded-xl">
+            <input type="password" x-model="userForm.password" placeholder="كلمة المرور" class="w-full p-3 border rounded-xl">
+            <select x-model="userForm.role" class="w-full p-3 border rounded-xl bg-gray-50 font-bold">
+                <option value="worker">موظف (Worker)</option>
+                <option value="admin">مدير (Admin)</option>
+            </select>
+            <button @click="saveUser()" class="w-full bg-black text-white py-3 rounded-xl font-bold shadow-lg">إنشاء الحساب</button>
+            <button @click="showAddUserModal = false" class="w-full text-gray-400 py-2 font-bold">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div x-show="modalConfirm.show" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" x-cloak>
+    <div class="bg-white w-full max-w-xs rounded-3xl p-6 text-center shadow-2xl border-2 border-red-100">
+        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-exclamation-triangle text-2xl animate-pulse"></i>
+        </div>
+        <h3 class="text-xl font-black mb-2 italic" x-text="modalConfirm.title"></h3>
+        <p class="text-gray-500 text-sm mb-6" x-text="modalConfirm.message"></p>
+        <div class="flex gap-3">
+            <button @click="modalConfirm.onConfirm(); modalConfirm.show = false;" class="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold shadow-lg shadow-red-200">نعم، تأكيد</button>
+            <button @click="modalConfirm.show = false" class="flex-1 bg-gray-100 text-gray-500 py-3 rounded-2xl font-bold">تراجع</button>
+        </div>
+    </div>
+</div>
 
 <div x-show="loading" class="fixed inset-0 z-[1000] bg-slate-900/50 backdrop-blur-lg flex flex-col items-center justify-center text-white transition-all">
     <div class="animate-spin rounded-full h-16 w-16 border-4 border-indigo-500 border-t-transparent mb-4 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
