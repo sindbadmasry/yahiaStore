@@ -125,7 +125,7 @@
     </div>
 </div>
 
-<div x-show="showAddExpenseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" x-cloak>
+<div x-show="showExpensesModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" x-cloak>
     <div class="bg-white w-full max-w-sm rounded-2xl p-6">
         <h3 class="text-lg font-bold mb-4 text-red-600 font-black italic">تسجيل مصروف جديد (صادر)</h3>
         <div class="space-y-3">
@@ -1086,7 +1086,15 @@ filterDate: {
 from: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-01',
 to: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0'),
 month: ''
-},
+},// 
+showPanel: false, 
+showExpensesModal: false,
+showPurchaseModal: false,
+showTransferModal: false,
+showReceiveModal: false,
+showMaintenanceModal: false,
+showAddCustomerModal: false,
+    
 showPosProductsModal: false, showProductModal: false, isEditingProduct: false,
 showWalletTxModal: false, showMaintenanceModal: false, showEditMaintenanceModal: false, showAllMaintenanceModal: false,
 showAddUserModal: false, showWalletTransferModal: false, showInvoicesModal: false, showWalletTransactionsModal: false,
