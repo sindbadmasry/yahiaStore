@@ -535,6 +535,343 @@ return {
     
     openWalletTxModal(type) { this.wTxForm = { type: type, wallet: '', amount: '', notes: '' }; this.showWalletTxModal = true; },
     showCustomers() { this.showCustomersModal = true; }
+    / --- المتغيرات التي تم إصلاحها للتحكم في الواجهة بدقة ---
+showPanel: false, // للتحكم بالشريط الجانبي (Android Panel)
+showAddExpenseModal: false,
+showExpensesReportsModal: false,
+showWalletTxModal: false,
+showEditMaintenanceModal: false,
+showMaintenanceModal: false,
+showAddUserModal: false,
+editPaymentModal: false,
+showCustomersModal: false,
+showAddCustomerModal: false,
+showPosProductsModal: false, 
+showProductModal: false, 
+isEditingProduct: false,
+showInvoicesModal: false, 
+showWalletTransactionsModal: false,
+showDebtorsModal: false, 
+showDebtorInvoicesModal: false,
+showScannerModal: false,
+showBestSellersModal: false,
+
+// --- توحيد الـ Objects (x-show="object.show") ---
+modalAddWallet: { show: false, name: '', limit: 200000 }, 
+modalUpdateCash: { show: false, amount: 0 }, 
+modalConfirm: { show: false, message: '', onConfirm: null },
+
+// --- نماذج الإدخال الموحدة ---
+editPaymentForm: { saleId: '', paid: 0 },
+addCustomerForm: { name: '', phone: '', address: '' },
+customerSearch: '', filteredCustomers: [], customers: [],
+pForm: { hasBox: false, hasCharger: false, hasHeadphone: false, paymentType: 'Cash', walletName: '', updateCashOrWallet: true },
+wTxForm: { type: 'وارد', wallet: '', amount: '', profit: '', notes: '', fromCash: false },
+mForm: { Client_Name: '', Phone_Number: '', Phone_Type: '', Issue: '', Expected_Cost: '' },
+mEditForm: { Ticket_ID: '', Status: '', Expected_Cost: '', paid: '', Cost_Price: '' },
+addUserForm: { username: '', password: '', role: 'worker' },
+expenseForm: { description: '', amount: '', notes: '', paymentMethod: 'Cash', walletName: '', updateCashOrWallet: true },
+
+invoicesFilter: '', walletTransactions: [], debtors: [], debtorInvoices: [], selectedDebtor: '', mFilter: 'قيد الانتظار', shopCash: 0,
+scanTarget: '', html5QrcodeScanner: null,
+
+getLocalDate() {
+const d = new Date();
+return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+},
+getFirstDayOfMonth() {
+const d = new Date();
+return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
+},
+openScanner(target) {
+this.scanTarget = target;
+this.showScannerModal = true;
+this.$nextTick(() => {
+this.html5QrcodeScanner = new Html5Qrcode("reader");
+this.html5QrcodeScanner.start(
+{ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
+(decodedText) => { this.handleScanResult(decodedText); },
+(errorMessage) => { }
+).catch(err => { console.log(err); alert("يرجى إعطاء صلاحية الكاميرا للمتصفح."); this.closeScanner(); });
+});
+},
+handleScanResult(text) {
+if(this.scanTarget === 'pos') { this.search = text; }
+else if(this.scanTarget === 'invSearch') { this.invSearch = text; }
+else if(this.scanTarget === 'pForm.Code') { this.pForm.Code = text; this.checkExistingProduct(); }
+else if(this.scanTarget === 'pForm.Serial') { this.pForm.Serial = text; }
+this.closeScanner();
+},
+closeScanner() {
+if (this.html5QrcodeScanner) { this.html5QrcodeScanner.stop().then(() => { this.html5QrcodeScanner.clear(); }).catch(err => console.log(err)); }
+this.showScannerModal = false;
+},
+async processImageOCR(event) {
+const file = event.target.files[0]; if (!file) return;
+this.loading = true;
+try { const { data: { text } } = await Tesseract.recognize(file, 'ara+eng');
+this.pForm.Details = (this.pForm.Details ? this.pForm.Details + '\n\n' : '') + text; alert('تم استخراج النص.');
+} catch (err) { alert('خطأ في استخراج النص.'); }
+this.loading = false; event.target.value = '';
+},
+checkExistingProduct() {
+if(!this.pForm.Code) return;
+const existing = this.inventory.find(i => i.Code === this.pForm.Code);
+if (existing) {
+this.pForm.Product_Name = existing.Product_Name || this.pForm.Product_Name; this.pForm.Selling_Price = existing.Selling_Price || this.pForm.Selling_Price; this.pForm.Cost_Price = existing.Cost_Price || this.pForm.Cost_Price; this.pForm.Min_Stock = existing.Min_Stock || this.pForm.Min_Stock;
+if(existing.Category && existing.Category.includes('هاتف')) { this.pForm.Model = existing.Model || this.pForm.Model; this.pForm.Storage = existing.Storage || this.pForm.Storage; this.pForm.RAM = existing.RAM || this.pForm.RAM; }
+}
+},
+showConfirm(message, callback) { this.modalConfirm = { show: true, message: message, onConfirm: callback }; },
+executeConfirm() { if(this.modalConfirm.onConfirm) this.modalConfirm.onConfirm(); this.modalConfirm.show = false; },
+setTodayFilter() {
+const today = this.getLocalDate();
+this.filterDate.from = today;
+this.filterDate.to = today;
+this.filterDate.month = '';
+},
+setMonthFilter() {
+const d = new Date();
+this.filterDate.from = this.getFirstDayOfMonth();
+const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+this.filterDate.to = lastDay.getFullYear() + '-' + String(lastDay.getMonth() + 1).padStart(2, '0') + '-' + String(lastDay.getDate()).padStart(2, '0');
+this.filterDate.month = '';
+},
+isDateInRange(dateString) {
+if (!dateString) return false;
+const date = new Date(dateString);
+const dStr = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+return dStr >= this.filterDate.from && dStr <= this.filterDate.to;
+},
+async callApi(action, dataObj = {}) {
+if (!API_URL.includes("script.google.com")) { alert("يرجى تعيين رابط الـ API_URL بشكل صحيح."); return { success: false }; }
+try { const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, data: dataObj }) });
+return await response.json(); } catch (error) { return { success: false, error: "فشل الاتصال." }; }
+},
+init() {
+const saved = localStorage.getItem('sa7by_session');
+if (saved) { try { this.user = JSON.parse(saved); this.isLoggedIn = true; this.currentTab = 'pos'; this.fetchData(); } catch (e) { this.logout();
+} }
+},
+async login() {
+if (!this.loginForm.username || !this.loginForm.password) return alert("أدخل البيانات!");
+this.loading = true; const res = await this.callApi('login', this.loginForm); this.loading = false;
+if (res && res.success) { this.user = res.user; this.isLoggedIn = true; this.currentTab = 'pos'; localStorage.setItem('sa7by_session', JSON.stringify(res.user)); this.fetchData();
+} else { alert(res ? res.error : "خطأ في تسجيل الدخول"); }
+},
+logout() { localStorage.removeItem('sa7by_session'); location.reload(); },
+async fetchData() {
+this.loading = true; const res = await this.callApi('getAllData');
+if (res && !res.error) { this.data = res; const cash = (res.Settings || []).find(s => s.Key === "Shop_Cash" || s.Setting_Name === "Shop_Cash" || s[0] === "Shop_Cash");
+this.shopCash = cash ? Number(cash.Value || cash[1] || 0) : 0; }
+this.loading = false;
+},
+getTodaySales() {
+const today = this.getLocalDate();
+let total = 0;
+(this.data.Sales || []).forEach(sale => {
+if (sale.Date && sale.Date.startsWith(today)) {
+total += Number(sale.Total || 0);
+}
+});
+return total;
+},
+getFilteredProfits() {
+let newPhone = 0, usedPhone = 0, general = 0, wallet = 0;
+(this.data.Wallets || []).forEach(w => { if (this.isDateInRange(w.Date)) { wallet += Number(w.Profit_Margin || w.profit || 0); } });
+(this.data.Sales || []).forEach(sale => {
+if (this.isDateInRange(sale.Date)) {
+try {
+let items = JSON.parse(sale.Items_JSON || "[]");
+items.forEach(item => {
+let invItem = (this.data.Inventory || []).find(i => i.Code == item.code); let cost = invItem ? Number(invItem.Cost_Price || 0) : 0;
+let profit = (Number(item.price) - cost) * Number(item.qty);
+if (invItem) { if (invItem.Category === 'هاتف جديد') newPhone += profit; else if (invItem.Category === 'هاتف مستعمل') usedPhone += profit;
+else general += profit; } else { general += profit; }
+}); } catch (e) { }
+} }); return { newPhone, usedPhone, general, wallet };
+},
+get profits() { return this.getFilteredProfits(); },
+getFilteredMaintStats() {
+let totalPaid = 0, totalCost = 0;
+(this.data.Maintenance || []).forEach(m => { if (m.Status === 'تم التسليم' && this.isDateInRange(m.Date)) { totalPaid += Number(m.paid || m.Paid || 0); totalCost += Number(m.Cost_Price || 0); } });
+return { totalPaid, totalCost, netProfit: totalPaid - totalCost };
+},
+get maintStats() { return this.getFilteredMaintStats(); },
+get inventory() { return this.data.Inventory || []; },
+get processedInventory() {
+let list = this.inventory;
+if (this.invSearch.trim() !== '') {
+const q = this.invSearch.toLowerCase().trim();
+list = list.filter(i => String(i.Product_Name || '').toLowerCase().includes(q) || String(i.Code || '').includes(q));
+}
+if (this.invFilter === 'shortages') { return list.filter(i => Number(i.Stock) <= Number(i.Min_Stock || 1)); }
+return list;
+},
+get filteredInventoryPOS() {
+const q = this.search.toLowerCase().trim();
+return this.inventory.filter(i => {
+const matchesSearch = !q || String(i.Product_Name || '').toLowerCase().includes(q) || String(i.Code || '').includes(q);
+const category = String(i.Category || '');
+const matchesTab = this.posFilter === 'all' ? !category.includes('هاتف') : this.posFilter === 'new' ?
+category === 'هاتف جديد' : this.posFilter === 'used' ? category === 'هاتف مستعمل' : true;
+return matchesSearch && matchesTab;
+});
+},
+get filteredMaintenance() {
+if (!this.data.Maintenance) return [];
+return this.data.Maintenance.filter(m => { const status = String(m.Status || '').trim(); return status === this.mFilter; }).reverse();
+},
+get filteredWallets() {
+const q = this.searchWallet.toLowerCase(); if (!q) return this.dynamicWallets;
+return this.dynamicWallets.filter(w => String(w.name || '').toLowerCase().includes(q));
+},
+get bestSellers() {
+let salesCount = {};
+(this.data.Sales || []).forEach(sale => {
+try {
+let items = JSON.parse(sale.Items_JSON || "[]");
+items.forEach(item => {
+if (!salesCount[item.code]) { salesCount[item.code] = { name: item.name, qty: 0 }; }
+salesCount[item.code].qty += Number(item.qty);
+});
+} catch (e) {}
+});
+return Object.values(salesCount).sort((a, b) => b.qty - a.qty);
+},
+addToCart(product) {
+if (product.Stock <= 0) return alert('هذا المنتج نفد من المخزن!');
+const item = this.cart.find(c => c.code === product.Code);
+if (item) item.qty++; else this.cart.push({ code: product.Code, name: product.Product_Name, price: product.Selling_Price, qty: 1 });
+this.checkout.paid = this.cartTotal;
+},
+get cartTotal() { return this.cart.reduce((s, i) => s + (i.price * i.qty), 0); },
+async confirmSale() {
+if (!this.cart.length) return; if (this.checkout.type === 'Wallet' && !this.checkout.walletName) return alert('برجاء اختيار المحفظة');
+this.loading = true;
+const saleData = { total: this.cartTotal, paid: this.checkout.paid === '' ? this.cartTotal : this.checkout.paid, customer: this.checkout.customer ||
+'عميل نقدي', paymentType: this.checkout.type, Payment_Type: this.checkout.type, walletName: this.checkout.walletName, Wallet_Name: this.checkout.walletName, isPurchase: false, updateCashOrWallet: this.checkout.updateCashOrWallet, items: this.cart, user: this.user.username };
+await this.callApi('processSale', saleData);
+this.cart = []; this.showCart = false; this.checkout = { customer: '', type: 'Cash', paid: '', walletName: '', isPurchase: false, updateCashOrWallet: true };
+this.fetchData();
+},
+openProductModal(cat) { this.isEditingProduct = false; this.pForm = { Category: cat, Code: '', Product_Name: '', Cost_Price: '', Selling_Price: '', Stock: 1, Min_Stock: 1, User: this.user.username, Model: '', Storage: '', RAM: '', Color: '', Battery: '', Serial: '', Details: '', hasBox: false, hasCharger: false, hasHeadphone: false, paymentType: 'Cash', walletName: '', updateCashOrWallet: true };
+this.showProductModal = true; },
+openInventoryProduct(item) {
+this.isEditingProduct = true;
+this.pForm = { Category: item.Category || '', Code: item.Code || '', Product_Name: item.Product_Name || '', Cost_Price: item.Cost_Price ||
+'', Selling_Price: item.Selling_Price || '', Stock: item.Stock || 0, Min_Stock: item.Min_Stock || 1, User: item.User || this.user.username, Model: item.Model ||
+'', Storage: item.Storage || '', RAM: item.RAM || '', Color: item.Color || '', Battery: item.Battery || '', Serial: item.Serial ||
+'', Details: item.Details || '', hasBox: false, hasCharger: false, hasHeadphone: false, paymentType: 'Cash', walletName: '', updateCashOrWallet: false };
+this.showProductModal = true;
+},
+async saveProduct() {
+if (!this.pForm.Code || !this.pForm.Product_Name || !this.pForm.Selling_Price) return alert("أدخل البيانات الأساسية");
+let extraDetails = [];
+if(this.pForm.hasBox) extraDetails.push("كرتونة"); if(this.pForm.hasCharger) extraDetails.push("شاحن كامل"); if(this.pForm.hasHeadphone) extraDetails.push("سماعة");
+if (extraDetails.length > 0) { let currentDetails = this.pForm.Details || ""; let joined = extraDetails.join(" - ");
+this.pForm.Details = currentDetails ? currentDetails + " | " + joined : joined; }
+this.loading = true;
+this.pForm.Total_Cost = (Number(this.pForm.Cost_Price) || 0) * (Number(this.pForm.Stock) || 1); this.pForm.Payment_Type = this.pForm.paymentType; this.pForm.Wallet_Name = this.pForm.walletName;
+await this.callApi('saveProduct', this.pForm); this.showProductModal = false; this.fetchData();
+},
+openAddUserModal() { this.addUserForm = { username: '', password: '', role: 'worker' }; this.showAddUserModal = true; },
+async addNewUser() { if (!this.addUserForm.username || !this.addUserForm.password) return alert("أدخل اسم المستخدم وكلمة المرور"); this.loading = true; await this.callApi('addUser', this.addUserForm);
+this.showAddUserModal = false; this.fetchData(); },
+openAddCustomerModal() { this.addCustomerForm = { name: '', phone: '', address: '' }; this.showAddCustomerModal = true; },
+async addNewCustomer() { if (!this.addCustomerForm.name) return alert("أدخل اسم العميل"); this.loading = true; await this.callApi('addCustomer', this.addCustomerForm); this.showAddCustomerModal = false; this.fetchData(); },
+
+openAddExpenseModal() {
+this.expenseForm = { description: '', amount: '', notes: '', paymentMethod: 'Cash', walletName: '', updateCashOrWallet: true };
+this.showAddExpenseModal = true;
+},
+async submitExpense() {
+if(!this.expenseForm.description || !this.expenseForm.amount) return alert("يرجى إدخال بيان المصروف والمبلغ.");
+if (this.expenseForm.paymentMethod === 'Wallet' && !this.expenseForm.walletName) return alert('برجاء اختيار المحفظة');
+this.loading = true;
+await this.callApi('saveExpense', { ...this.expenseForm, user: this.user.username });
+this.showAddExpenseModal = false;
+this.fetchData();
+},
+getTotalExpenses() {
+return (this.data.Expenses || []).filter(e => this.isDateInRange(e.Date)).reduce((sum, e) => sum + Number(e.Amount || 0), 0);
+},
+get groupedExpenses() {
+let groups = {};
+(this.data.Expenses || []).filter(e => this.isDateInRange(e.Date)).forEach(e => {
+let desc = e.Description || 'غير مصنف';
+if(!groups[desc]) groups[desc] = 0;
+groups[desc] += Number(e.Amount || 0);
+});
+return Object.keys(groups).map(k => ({ desc: k, total: groups[k] }));
+},
+get filteredCustomers() {
+if (!this.customerSearch || this.customerSearch.length < 2) return []; const search = this.customerSearch.toLowerCase(); const customers = new Set();
+(this.data.Sales || []).forEach(sale => { if (sale.Customer && sale.Customer.toLowerCase().includes(search)) customers.add(sale.Customer); });
+(this.data.Customers || []).forEach(customer => { if (customer.Name && customer.Name.toLowerCase().includes(search)) customers.add(customer.Name); });
+return Array.from(customers).filter(name => name.toLowerCase().includes(search));
+},
+get filteredInvoices() {
+return (this.data.Sales || []).filter(sale => {
+if (!this.isDateInRange(sale.Date)) return false;
+try { let items = JSON.parse(sale.Items_JSON || "[]"); if (this.invoicesFilter === 'عام') { return items.some(item => { let invItem = (this.data.Inventory || []).find(i => i.Code == item.code); return invItem && !invItem.Category.includes('هاتف'); });
+} else { return items.some(item => { let invItem = (this.data.Inventory || []).find(i => i.Code == item.code); return invItem && invItem.Category === this.invoicesFilter; });
+} } catch (e) { return false; }
+});
+},
+getMClass(status) { status = String(status).trim(); if (status === 'قيد الانتظار') return 'm-pending'; if (status === 'تم التصليح') return 'm-repaired';
+if (status === 'تم التسليم') return 'm-delivered'; return 'm-rejected'; },
+openMaintenanceModal() { this.mForm = { Client_Name: '', Phone_Number: '', Phone_Type: '', Issue: '', Expected_Cost: '' }; this.showMaintenanceModal = true; },
+async saveNewMaintenance() { this.loading = true; await this.callApi('saveMaintenance', { Ticket_ID: "T-" + Date.now().toString().slice(-6), Status: 'قيد الانتظار', Client_Name: this.mForm.Client_Name || "بدون اسم", Phone_Number: this.mForm.Phone_Number || "", Phone_Type: this.mForm.Phone_Type || "غير محدد", Issue: this.mForm.Issue || "غير محدد", Expected_Cost: this.mForm.Expected_Cost || 0, paid: 0, Cost_Price: 0, User: this.user.username });
+this.showMaintenanceModal = false; this.fetchData(); },
+openEditMaintenanceModal(m) { this.mEditForm = { Ticket_ID: m.Ticket_ID, Status: m.Status || 'قيد الانتظار', Expected_Cost: m.Expected_Cost || 0, paid: m.paid ||
+m.Paid || 0, Cost_Price: m.Cost_Price || 0 }; this.showEditMaintenanceModal = true; },
+async submitEditMaintenance() { this.loading = true; await this.callApi('updateMaintenance', { Ticket_ID: this.mEditForm.Ticket_ID, Status: this.mEditForm.Status, Expected_Cost: this.mEditForm.Expected_Cost || 0, paid: this.mEditForm.paid || 0, Cost_Price: this.mEditForm.Cost_Price || 0 });
+this.showEditMaintenanceModal = false; this.fetchData(); },
+get dynamicWallets() { return (this.data.Settings || []).filter(s => { const key = s.Key || s.Setting_Name || s[0]; return key && key.toString().startsWith("Limit_"); }).map(s => { const key = s.Key || s.Setting_Name || s[0]; const val = s.Value || s[1] || 0; return { name: key.replace("Limit_", ""), limit: Number(val) }; });
+},
+calcWallet(name) { const txs = (this.data.Wallets || []).filter(w => String(w.Wallet_Name || "").trim() === String(name).trim()); const now = new Date();
+let incoming = 0, outgoing = 0, balance = 0, monthlyIncoming = 0, monthlyOutgoing = 0;
+txs.forEach(t => { const amt = Number(t.Amount || 0); const type = String(t.Type || "").trim(); const d = new Date(t.Date); if (type === 'وارد') { incoming += amt; balance += amt; if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) monthlyIncoming += amt; } else if (type === 'صادر') { outgoing += amt; balance -= amt; if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) monthlyOutgoing += amt; } });
+return { incoming, outgoing, balance, monthlyIncoming, monthlyOutgoing }; },
+calcWalletFiltered(name) { const txs = (this.data.Wallets || []).filter(w => String(w.Wallet_Name || "").trim() === String(name).trim() && this.isDateInRange(w.Date));
+let incoming = 0, outgoing = 0; txs.forEach(t => { const amt = Number(t.Amount || 0); const type = String(t.Type || "").trim(); if (type === 'وارد') incoming += amt; else if (type === 'صادر') outgoing += amt; });
+return { incoming, outgoing }; },
+getLimitRemaining(name, limit) { const { monthlyIncoming, monthlyOutgoing } = this.calcWallet(name); return { incoming: limit ?
+Math.max(limit - monthlyIncoming, 0) : 0, outgoing: limit ? Math.max(limit - monthlyOutgoing, 0) : 0 }; },
+openWalletTxModal(type) { this.wTxForm = { type: type, wallet: '', amount: '', profit: '', notes: '', fromCash: false };
+this.showWalletTxModal = true; },
+async submitWalletTx() { if (!this.wTxForm.wallet || !this.wTxForm.amount) return alert("الرجاء اختيار المحفظة وكتابة المبلغ"); const wData = this.calcWallet(this.wTxForm.wallet);
+const walletObj = this.dynamicWallets.find(dw => dw.name === this.wTxForm.wallet); if (this.wTxForm.type === 'صادر' && walletObj && walletObj.limit > 0) { if ((wData.monthlyOutgoing + Number(this.wTxForm.amount)) > walletObj.limit) { this.showConfirm("تنبيه: تتخطى الليميت الشهري! الاستمرار؟", async () => { this.loading = true; await this.callApi('saveWalletTransaction', { wallet: this.wTxForm.wallet, type: this.wTxForm.type, amount: Number(this.wTxForm.amount), notes: this.wTxForm.notes, user: this.user.username, profit: Number(this.wTxForm.profit || 0), fromCash: this.wTxForm.fromCash }); this.showWalletTxModal = false; this.fetchData(); });
+return; } } this.loading = true; await this.callApi('saveWalletTransaction', { wallet: this.wTxForm.wallet, type: this.wTxForm.type, amount: Number(this.wTxForm.amount), notes: this.wTxForm.notes, user: this.user.username, profit: Number(this.wTxForm.profit || 0), fromCash: this.wTxForm.fromCash });
+this.showWalletTxModal = false; this.fetchData(); },
+addNewWallet() { this.modalAddWallet = { show: true, name: '', limit: 50000 }; },
+async submitNewWallet() { if(!this.modalAddWallet.name) return; this.modalAddWallet.show = false; this.loading = true; await this.callApi('saveWalletConfig', { name: this.modalAddWallet.name, limit: this.modalAddWallet.limit }); this.fetchData();
+},
+async deleteWallet(name) { this.showConfirm('متأكد من حذف محفظة ' + name + ' بالكامل؟', async () => { this.loading = true; await this.callApi('deleteWallet', { name: name }); this.fetchData(); });
+},
+updateShopCash() { this.modalUpdateCash = { show: true, amount: this.shopCash }; },
+async submitUpdateCash() { this.modalUpdateCash.show = false; this.loading = true; await this.callApi('setShopCash', { amount: Number(this.modalUpdateCash.amount) }); this.fetchData(); },
+getTotalSales(category) { let total = 0; (this.data.Sales || []).forEach(sale => { if (this.isDateInRange(sale.Date)) { try { let items = JSON.parse(sale.Items_JSON || "[]"); items.forEach(item => { let invItem = (this.data.Inventory || []).find(i => i.Code == item.code); if (invItem) { let itemCategory = invItem.Category || 'عام'; if (category === 'عام' && !itemCategory.includes('هاتف')) total += Number(item.price) * Number(item.qty); else if (itemCategory === category) total += Number(item.price) * Number(item.qty); } else if (category === 'عام') { total += Number(item.price) * Number(item.qty); } }); } catch (e) { } } });
+return total; },
+getTotalWalletBalance() { let total = 0; this.dynamicWallets.forEach(w => { total += this.calcWallet(w.name).balance; }); return total; },
+getTotalDebts() { let total = 0; (this.data.Sales || []).forEach(sale => { if (this.isDateInRange(sale.Date) && sale.Payment_Type === 'Credit') { total += Number(sale.Total || 0) - Number(sale.Paid || 0); } });
+return total; },
+getLimitPercent(name, limit, type = 'outgoing') { if (!limit) return 0; const wallet = this.calcWallet(name);
+const used = type === 'incoming' ? wallet.monthlyIncoming : wallet.monthlyOutgoing; return Math.min((used / limit) * 100, 100); },
+showInvoices(category) { this.invoicesFilter = category; this.showInvoicesModal = true; },
+showWalletTransactions() { this.walletTransactions = (this.data.Wallets || []).filter(w => this.isDateInRange(w.Date)); this.showWalletTransactionsModal = true; },
+showDebtors() { const debts = {}; (this.data.Sales || []).forEach(sale => { if (sale.Payment_Type === 'Credit') { const customer = sale.Customer || 'عميل نقدي'; const debt = Number(sale.Total || 0) - Number(sale.Paid || 0); if (debt > 0) { if (!debts[customer]) debts[customer] = 0; debts[customer] += debt; } } });
+(this.data.Customers || []).forEach(customer => { if (customer.Debt && Number(customer.Debt) > 0) { if (!debts[customer.Name]) debts[customer.Name] = 0; debts[customer.Name] += Number(customer.Debt); } });
+this.debtors = Object.keys(debts).map(customer => ({ name: customer, totalDebt: debts[customer] })); this.showDebtorsModal = true; },
+showDebtorInvoices(customer) { this.selectedDebtor = customer; this.debtorInvoices = (this.data.Sales || []).filter(sale => sale.Customer === customer && sale.Payment_Type === 'Credit' && (Number(sale.Total || 0) - Number(sale.Paid || 0)) > 0 );
+this.showDebtorInvoicesModal = true; },
+showCustomers() { this.customers = (this.data.Customers || []).map(customer => { const customerSales = (this.data.Sales || []).filter(sale => sale.Customer === customer.Name); const totalDebt = customerSales.filter(sale => sale.Payment_Type === 'Credit').reduce((sum, sale) => sum + (Number(sale.Total || 0) - Number(sale.Paid || 0)), 0); return { ...customer, totalDebt }; });
+this.showCustomersModal = true; },
+editSalePayment(sale) { this.editPaymentForm = { saleId: sale.ID || '', paid: Number(sale.Paid || 0) }; this.editPaymentModal = true; },
+async updateSalePayment() { this.loading = true; await this.callApi('updateSalePayment', this.editPaymentForm); this.editPaymentModal = false; this.fetchData(); },
+getLimitColor(name, limit, type = 'outgoing') { const percent = this.getLimitPercent(name, limit, type); if (percent >= 80) return 'bg-rose-500';
+if (percent >= 50) return 'bg-amber-500'; return 'bg-emerald-500'; }
 }
 }
 </script>
