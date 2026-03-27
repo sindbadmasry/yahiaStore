@@ -87,47 +87,60 @@
 
     <main class="px-4 space-y-6">
 
-        <div x-show="currentTab === 'home' && activeView === ''" x-transition.opacity class="space-y-6">
-            <div x-show="user.role === 'admin'" class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
+        <div x-show="currentTab === 'home' && activeView === ''" x-transition.opacity class="space-y-4">
+            
+            <div x-show="user.role === 'admin'" class="bg-gradient-to-br from-slate-900 to-indigo-900 p-6 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
                 <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                <div class="relative z-10 flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1"><i class="fa-solid fa-cash-register ml-1"></i> كاش المحل الحالي</p>
-                        <h3 class="text-4xl font-black tabular-nums tracking-tight" x-text="shopCash.toLocaleString() + ' ج'"></h3>
+                <div class="relative z-10 flex flex-col gap-5">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-bold text-indigo-200 mb-1">إجمالي السيولة النقدية (الخزينة والمحافظ)</p>
+                            <h3 class="text-4xl font-black tabular-nums tracking-tight text-white" x-text="(shopCash + getTotalWalletBalance()).toLocaleString() + ' ج'"></h3>
+                        </div>
+                        <button @click="updateShopCash()" class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-md active:scale-95 shadow-inner border border-white/20"><i class="fa-solid fa-pen text-sm"></i></button>
                     </div>
-                    <button @click="updateShopCash()" class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-md active:scale-95"><i class="fa-solid fa-pen text-sm"></i></button>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-2 pt-4 border-t border-indigo-500/30">
+                        <div>
+                            <p class="text-[10px] font-bold text-emerald-300 mb-1 flex items-center gap-1"><i class="fa-solid fa-cash-register"></i> كاش المحل</p>
+                            <p class="text-xl font-black text-emerald-400 tabular-nums" x-text="shopCash.toLocaleString() + ' ج'"></p>
+                        </div>
+                        <div class="border-r border-indigo-500/30 pr-4">
+                            <p class="text-[10px] font-bold text-blue-300 mb-1 flex items-center gap-1"><i class="fa-solid fa-wallet"></i> إجمالي المحافظ</p>
+                            <p class="text-xl font-black text-blue-400 tabular-nums" x-text="getTotalWalletBalance().toLocaleString() + ' ج'"></p>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <h3 class="font-black text-slate-800 flex items-center gap-2"><div class="w-1.5 h-5 bg-indigo-500 rounded-full"></div> اختصارات سريعة</h3>
-            <div class="grid grid-cols-2 gap-3">
-                <button @click="openProductModal('هاتف جديد')" class="glass-panel p-4 rounded-3xl flex items-center gap-3 active:scale-95 border-r-4 border-r-blue-500 text-right">
-                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-plus"></i></div>
-                    <div><p class="font-black text-slate-800 text-sm">شراء هاتف</p><p class="text-[9px] text-slate-500 font-bold">إضافة للمخزن</p></div>
-                </button>
-                <button @click="openMaintenanceModal()" class="glass-panel p-4 rounded-3xl flex items-center gap-3 active:scale-95 border-r-4 border-r-amber-500 text-right">
-                    <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-wrench"></i></div>
-                    <div><p class="font-black text-slate-800 text-sm">تذكرة صيانة</p><p class="text-[9px] text-slate-500 font-bold">استلام جهاز جديد</p></div>
-                </button>
-                <button @click="openWalletTxModal('وارد')" class="glass-panel p-4 rounded-3xl flex items-center gap-3 active:scale-95 border-r-4 border-r-emerald-500 text-right">
-                    <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-arrow-down"></i></div>
-                    <div><p class="font-black text-slate-800 text-sm">استلام كاش</p><p class="text-[9px] text-slate-500 font-bold">للمحافظ</p></div>
-                </button>
-                <button @click="openAddCustomerModal()" class="glass-panel p-4 rounded-3xl flex items-center gap-3 active:scale-95 border-r-4 border-r-teal-500 text-right">
-                    <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-user-plus"></i></div>
-                    <div><p class="font-black text-slate-800 text-sm">إضافة عميل</p><p class="text-[9px] text-slate-500 font-bold">سجل جديد</p></div>
-                </button>
-            </div>
-            
-            <div class="glass-panel p-5 rounded-[2rem] flex justify-between items-center cursor-pointer active:scale-95" @click="showDebtorsModal = true">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center text-xl"><i class="fa-solid fa-hand-holding-dollar"></i></div>
-                    <div><p class="font-black text-slate-800">إجمالي المديونيات</p><p class="text-xs text-slate-500 font-bold">مستحقات للتحصيل</p></div>
-                </div>
-                <span class="text-xl font-black text-rose-500 tabular-nums" x-text="getTotalDebts().toLocaleString()"></span>
-            </div>
-        </div>
 
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="glass-panel p-4 rounded-[2rem] flex flex-col justify-center gap-3 active:scale-95 bg-white border border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-[1.2rem] flex items-center justify-center text-xl shadow-sm"><i class="fa-solid fa-chart-line"></i></div>
+                        <div>
+                            <p class="text-[10px] text-slate-500 font-bold mb-0.5">مبيعات اليوم</p>
+                            <p class="font-black text-slate-800 text-lg tabular-nums" x-text="getTodaySales().toLocaleString() + ' ج'"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div @click="showDebtorsModal = true" class="glass-panel p-4 rounded-[2rem] flex flex-col justify-center gap-3 active:scale-95 cursor-pointer bg-white border border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-[1.2rem] flex items-center justify-center text-xl shadow-sm"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                        <div>
+                            <p class="text-[10px] text-slate-500 font-bold mb-0.5">ديون السوق (الآجل)</p>
+                            <p class="font-black text-rose-600 text-lg tabular-nums" x-text="getTotalDebts().toLocaleString() + ' ج'"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div x-show="getTodaySales() === 0" class="bg-indigo-50/50 border border-indigo-100 p-4 rounded-3xl text-center">
+                <i class="fa-solid fa-mug-hot text-indigo-300 text-2xl mb-2"></i>
+                <p class="text-sm font-bold text-indigo-600">يوم سعيد! استخدم زر الإضافة (+) لبدء العمليات.</p>
+            </div>
+            
+        </div>
         <div x-show="currentTab === 'pos' && activeView === ''" x-transition.opacity class="flex flex-col h-full space-y-4">
             
             <div class="sticky top-[80px] z-30 glass-nav p-3 rounded-[2rem] space-y-3 shadow-sm border border-slate-200/60">
@@ -461,8 +474,11 @@
 
     </main>
 
+    <button @click="showFabMenu = true" class="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-tr from-indigo-600 to-blue-500 text-white rounded-full shadow-[0_8px_25px_rgba(79,70,229,0.5)] flex items-center justify-center text-2xl active:scale-95 hover:scale-105 transition-transform z-[150] border-2 border-white/20">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
     <nav class="fixed bottom-4 left-4 right-4 max-w-4xl mx-auto glass-nav rounded-[2rem] z-[100] py-2 flex justify-around px-2 shadow-[0_20px_40px_rgba(0,0,0,0.1)] border border-white/50">
-        
         <button @click="currentTab = 'home'; activeView = ''" class="flex flex-col items-center flex-1 transition-all relative py-1">
             <div class="w-10 h-10 flex items-center justify-center rounded-[14px] transition-all" :class="currentTab === 'home' && activeView === '' ? 'bg-indigo-50 text-indigo-600 scale-110' : 'text-slate-400'">
                 <i class="fa-solid fa-house text-lg"></i>
@@ -494,6 +510,45 @@
 
 </div>
 </template>
+
+<div x-show="showFabMenu" x-cloak class="fixed inset-0 z-[600] flex items-end justify-center pointer-events-none">
+    <div x-show="showFabMenu" x-transition.opacity class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm pointer-events-auto" @click="showFabMenu = false"></div>
+    <div x-show="showFabMenu" 
+         x-transition:enter="sheet-enter" x-transition:enter-active="sheet-enter-active" 
+         x-transition:leave="sheet-leave" x-transition:leave-active="sheet-leave-active" 
+         class="w-full max-w-lg bg-white rounded-t-[2.5rem] p-6 space-y-4 relative z-10 pointer-events-auto shadow-2xl pb-10">
+        
+        <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-2"></div>
+        <h3 class="font-black text-slate-800 text-lg text-center mb-4">إجراء سريع</h3>
+        
+        <div class="grid grid-cols-2 gap-4">
+            <button @click="currentTab='pos'; showFabMenu = false" class="bg-emerald-50 border border-emerald-100 p-4 rounded-3xl flex flex-col items-center gap-3 active:scale-95 hover:scale-105 transition-transform">
+                <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-[1.2rem] flex items-center justify-center text-2xl shadow-sm"><i class="fa-solid fa-cart-shopping"></i></div>
+                <span class="font-black text-slate-800 text-sm">بيع</span>
+            </button>
+            <button @click="openProductModal('هاتف جديد'); showFabMenu = false" class="bg-blue-50 border border-blue-100 p-4 rounded-3xl flex flex-col items-center gap-3 active:scale-95 hover:scale-105 transition-transform">
+                <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-[1.2rem] flex items-center justify-center text-2xl shadow-sm"><i class="fa-solid fa-box-open"></i></div>
+                <span class="font-black text-slate-800 text-sm">شراء</span>
+            </button>
+            <button @click="openWalletTxModal('صادر'); showFabMenu = false" class="bg-rose-50 border border-rose-100 p-4 rounded-3xl flex flex-col items-center gap-3 active:scale-95 hover:scale-105 transition-transform">
+                <div class="w-14 h-14 bg-rose-100 text-rose-600 rounded-[1.2rem] flex items-center justify-center text-2xl shadow-sm"><i class="fa-solid fa-arrow-up"></i></div>
+                <span class="font-black text-slate-800 text-sm">تحويل كاش</span>
+            </button>
+            <button @click="openWalletTxModal('وارد'); showFabMenu = false" class="bg-teal-50 border border-teal-100 p-4 rounded-3xl flex flex-col items-center gap-3 active:scale-95 hover:scale-105 transition-transform">
+                <div class="w-14 h-14 bg-teal-100 text-teal-600 rounded-[1.2rem] flex items-center justify-center text-2xl shadow-sm"><i class="fa-solid fa-arrow-down"></i></div>
+                <span class="font-black text-slate-800 text-sm">استلام كاش</span>
+            </button>
+            <button @click="openAddCustomerModal(); showFabMenu = false" class="bg-cyan-50 border border-cyan-100 p-4 rounded-3xl flex flex-col items-center gap-3 active:scale-95 hover:scale-105 transition-transform">
+                <div class="w-14 h-14 bg-cyan-100 text-cyan-600 rounded-[1.2rem] flex items-center justify-center text-2xl shadow-sm"><i class="fa-solid fa-user-plus"></i></div>
+                <span class="font-black text-slate-800 text-sm">إضافة عميل</span>
+            </button>
+            <button @click="openMaintenanceModal(); showFabMenu = false" class="bg-amber-50 border border-amber-100 p-4 rounded-3xl flex flex-col items-center gap-3 active:scale-95 hover:scale-105 transition-transform">
+                <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-[1.2rem] flex items-center justify-center text-2xl shadow-sm"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                <span class="font-black text-slate-800 text-sm">تذكرة صيانة</span>
+            </button>
+        </div>
+    </div>
+</div>
 
 <div x-show="showScannerModal" x-cloak class="fixed inset-0 z-[600] bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
     <div class="glass-panel bg-white w-full max-w-md p-6 rounded-[2.5rem] relative">
@@ -803,8 +858,9 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzn1xxWJoRLeVGHX6gdjRkq
 function erpApp() {
 return {
 loading: false, isLoggedIn: false, user: { username: '', role: '' },
-currentTab: 'pos', 
-activeView: '', // NEW UI Variable to control full screen views
+currentTab: 'home', 
+activeView: '', 
+showFabMenu: false,
 loginForm: { username: '', password: '' },
 search: '', invSearch: '', posFilter: 'all', invFilter: 'all', searchWallet: '',
 data: { Inventory: [], Maintenance: [], Wallets: [], Sales: [], Settings: [], Users: [], Expenses: [] },
@@ -915,13 +971,13 @@ return await response.json(); } catch (error) { return { success: false, error: 
 },
 init() {
 const saved = localStorage.getItem('sa7by_session');
-if (saved) { try { this.user = JSON.parse(saved); this.isLoggedIn = true; this.currentTab = 'pos'; this.fetchData(); } catch (e) { this.logout();
+if (saved) { try { this.user = JSON.parse(saved); this.isLoggedIn = true; this.currentTab = 'home'; this.fetchData(); } catch (e) { this.logout();
 } }
 },
 async login() {
 if (!this.loginForm.username || !this.loginForm.password) return alert("أدخل البيانات!");
 this.loading = true; const res = await this.callApi('login', this.loginForm); this.loading = false;
-if (res && res.success) { this.user = res.user; this.isLoggedIn = true; this.currentTab = 'pos'; localStorage.setItem('sa7by_session', JSON.stringify(res.user)); this.fetchData();
+if (res && res.success) { this.user = res.user; this.isLoggedIn = true; this.currentTab = 'home'; localStorage.setItem('sa7by_session', JSON.stringify(res.user)); this.fetchData();
 } else { alert(res ? res.error : "خطأ في تسجيل الدخول"); }
 },
 logout() { localStorage.removeItem('sa7by_session'); location.reload(); },
@@ -930,6 +986,16 @@ this.loading = true; const res = await this.callApi('getAllData');
 if (res && !res.error) { this.data = res; const cash = (res.Settings || []).find(s => s.Key === "Shop_Cash" || s.Setting_Name === "Shop_Cash" || s[0] === "Shop_Cash");
 this.shopCash = cash ? Number(cash.Value || cash[1] || 0) : 0; }
 this.loading = false;
+},
+getTodaySales() {
+const today = this.getLocalDate();
+let total = 0;
+(this.data.Sales || []).forEach(sale => {
+if (sale.Date && sale.Date.startsWith(today)) {
+total += Number(sale.Total || 0);
+}
+});
+return total;
 },
 getFilteredProfits() {
 let newPhone = 0, usedPhone = 0, general = 0, wallet = 0;
