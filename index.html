@@ -1219,4 +1219,23 @@ return total; },
 getTotalWalletBalance() { let total = 0; this.dynamicWallets.forEach(w => { total += this.calcWallet(w.name).balance; }); return total; },
 getTotalDebts() { let total = 0; (this.data.Sales || []).forEach(sale => { if (this.isDateInRange(sale.Date) && sale.Payment_Type === 'Credit') { total += Number(sale.Total || 0) - Number(sale.Paid || 0); } });
 return total; },
-getLimitPercent(name, limit, type = 'outgoing') { if (!limit
+getLimitPercent(name, limit, type = 'outgoing') { if (!limit) return 0; const wallet = this.calcWallet(name);
+const used = type === 'incoming' ? wallet.monthlyIncoming : wallet.monthlyOutgoing; return Math.min((used / limit) * 100, 100); },
+showInvoices(category) { this.invoicesFilter = category; this.showInvoicesModal = true; },
+showWalletTransactions() { this.walletTransactions = (this.data.Wallets || []).filter(w => this.isDateInRange(w.Date)); this.showWalletTransactionsModal = true; },
+showDebtors() { const debts = {}; (this.data.Sales || []).forEach(sale => { if (sale.Payment_Type === 'Credit') { const customer = sale.Customer || 'عميل نقدي'; const debt = Number(sale.Total || 0) - Number(sale.Paid || 0); if (debt > 0) { if (!debts[customer]) debts[customer] = 0; debts[customer] += debt; } } });
+(this.data.Customers || []).forEach(customer => { if (customer.Debt && Number(customer.Debt) > 0) { if (!debts[customer.Name]) debts[customer.Name] = 0; debts[customer.Name] += Number(customer.Debt); } });
+this.debtors = Object.keys(debts).map(customer => ({ name: customer, totalDebt: debts[customer] })); this.showDebtorsModal = true; },
+showDebtorInvoices(customer) { this.selectedDebtor = customer; this.debtorInvoices = (this.data.Sales || []).filter(sale => sale.Customer === customer && sale.Payment_Type === 'Credit' && (Number(sale.Total || 0) - Number(sale.Paid || 0)) > 0 );
+this.showDebtorInvoicesModal = true; },
+showCustomers() { this.customers = (this.data.Customers || []).map(customer => { const customerSales = (this.data.Sales || []).filter(sale => sale.Customer === customer.Name); const totalDebt = customerSales.filter(sale => sale.Payment_Type === 'Credit').reduce((sum, sale) => sum + (Number(sale.Total || 0) - Number(sale.Paid || 0)), 0); return { ...customer, totalDebt }; });
+this.showCustomersModal = true; },
+editSalePayment(sale) { this.editPaymentForm = { saleId: sale.ID || '', paid: Number(sale.Paid || 0) }; this.editPaymentModal = true; },
+async updateSalePayment() { this.loading = true; await this.callApi('updateSalePayment', this.editPaymentForm); this.editPaymentModal = false; this.fetchData(); },
+getLimitColor(name, limit, type = 'outgoing') { const percent = this.getLimitPercent(name, limit, type); if (percent >= 80) return 'bg-rose-500';
+if (percent >= 50) return 'bg-amber-500'; return 'bg-emerald-500'; }
+}
+}
+</script>
+</body>
+</html>
