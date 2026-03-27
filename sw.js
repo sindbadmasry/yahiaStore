@@ -1,4 +1,4 @@
-const CACHE_NAME = 'step-v3.1';
+const CACHE_NAME = 'step-v3.2';
 const urlsToCache = [
   '/',
   '/index.html',
