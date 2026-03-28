@@ -2,7 +2,7 @@
 ;
 
 // !! هام جداً: ضع رابط تطبيق Google Apps Script الخاص بك هنا !!
-const SCRIPT_URL = "ضع_رابط_الـ_Web_App_هنا"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyx0ENxFX44WV385KbnxV2Qy4RKupnAdySJvsnjv4eHZQUOYQfhD8EDYWz8KceIa3Nu/exec"; 
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('erpApp', () => ({
