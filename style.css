@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+
+body { 
+    font-family: 'Cairo', sans-serif; 
+    -webkit-tap-highlight-color: transparent; 
+    background-color: #f8fafc; 
+}
+
+[x-cloak] { 
+    display: none !important; 
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
+/* Glass Panels */
+.glass-panel { 
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(16px); 
+    border: 1px solid rgba(255, 255, 255, 0.6); 
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03); 
+}
+.glass-nav { 
+    background: rgba(255, 255, 255, 0.90); 
+    backdrop-filter: blur(20px); 
+    border-top: 1px solid rgba(255, 255, 255, 0.5); 
+}
+
+/* Animations */
+.sheet-enter { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(100%); }
+.sheet-enter-active { transform: translateY(0); }
+.sheet-leave { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(0); }
+.sheet-leave-active { transform: translateY(100%); }
+
+/* Maintenance Status Indicators */
+.m-pending { border-right: 4px solid #f59e0b; }
+.m-repaired { border-right: 4px solid #3b82f6; }
+.m-delivered { border-right: 4px solid #10b981; }
+.m-rejected { border-right: 4px solid #ef4444; }
