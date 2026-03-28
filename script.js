@@ -1,400 +1,571 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbzYDr5aXwVmcz2rHfPNyitXtZvt1RRPAo_poZZqq9EkurFOMZdU9iArXZNT2mMW7vff/exec";
+// إضافة فاصلة منقوطة وقائية لتجنب أخطاء دمج الملفات
+;
+
+// !! هام جداً: ضع رابط تطبيق Google Apps Script الخاص بك هنا !!
+const SCRIPT_URL = "ضع_رابط_الـ_Web_App_هنا"; 
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('erpApp', () => ({
-        // State
-        loading: false, isLoggedIn: false, user: { username: '', role: '' },
-        currentTab: 'pos', activeView: '',
+        // ==========================================
+        // 1. حالة النظام (State)
+        // ==========================================
+        loading: false,
+        isLoggedIn: false,
+        user: { username: '', role: '' },
         
-        // Data Store
-        data: { Inventory: [], Maintenance: [], Wallets: [], Sales: [], Settings: [], Users: [], Expenses: [], Customers: [] },
+        // التبويبات والواجهات
+        currentTab: 'home',
+        activeView: '',
         
-        // Modals / Panels
-        showPanel: false, showCart: false, showScannerModal: false, showProductModal: false,
-        isEditingProduct: false, showMaintenanceModal: false, showEditMaintenanceModal: false,
-        showWalletTxModal: false, showAddExpenseModal: false, showAddUserModal: false,
-        showCustomersModal: false, showAddCustomerModal: false, showDebtorsModal: false,
-        editPaymentModal: false, showExpensesReportsModal: false,
+        // الفلاتر والبحث
+        posFilter: 'new',
+        search: '',
+        invSearch: '',
+        invFilter: 'all',
+        mFilter: 'قيد الانتظار',
+        searchWallet: '',
+        filterDate: { from: '', to: '' },
+        customerSearch: '',
 
-        modalAddWallet: { show: false, name: '', limit: 200000 }, 
-        modalUpdateCash: { show: false, amount: 0 }, 
-        modalConfirm: { show: false, message: '', onConfirm: null },
+        // النوافذ المنبثقة (Modals)
+        showPanel: false, showDebtorsModal: false, editPaymentModal: false,
+        showWalletTxModal: false, showEditMaintenanceModal: false,
+        showAddExpenseModal: false, showAddUserModal: false,
+        showScannerModal: false, showCart: false, showProductModal: false,
+        showCustomersModal: false, showAddCustomerModal: false,
+        showMaintenanceModal: false, showExpensesReportsModal: false,
 
-        // Forms
+        // النماذج (Forms)
         loginForm: { username: '', password: '' },
-        checkout: { customer: '', type: 'Cash', paid: '', walletName: '', isPurchase: false, updateCashOrWallet: true },
-        pForm: { Category: '', Code: '', Product_Name: '', Cost_Price: '', Selling_Price: '', Stock: 1, Min_Stock: 1, hasBox: false, hasCharger: false, hasHeadphone: false, paymentType: 'Cash', walletName: '', updateCashOrWallet: true, Details: '' },
-        wTxForm: { type: 'وارد', wallet: '', amount: '', profit: '', notes: '', fromCash: false },
-        mForm: { Client_Name: '', Phone_Number: '', Phone_Type: '', Issue: '', Expected_Cost: '' },
-        mEditForm: { Ticket_ID: '', Status: '', Expected_Cost: '', paid: '', Cost_Price: '' },
+        checkout: { customer: '', type: 'Cash', paid: 0, walletName: '' },
+        pForm: {}, isEditingProduct: false,
+        mForm: { Client_Name: '', Phone_Number: '', Phone_Type: '', Issue: '', Expected_Cost: 0 },
+        mEditForm: {},
+        expenseForm: { description: '', amount: 0, notes: '', paymentMethod: 'Cash', walletName: '' },
+        wTxForm: { type: 'وارد', wallet: '', amount: 0, notes: '' },
+        modalAddWallet: { show: false, name: '', limit: 0 },
+        modalUpdateCash: { show: false, amount: 0 },
         addUserForm: { username: '', password: '', role: 'worker' },
-        addCustomerForm: { name: '', phone: '', address: '' },
-        expenseForm: { description: '', amount: '', notes: '', paymentMethod: 'Cash', walletName: '', updateCashOrWallet: true },
-        editPaymentForm: { saleId: '', paid: 0 },
+        addCustomerForm: { name: '', phone: '' },
+        editPaymentForm: { paid: 0, saleId: '' },
+        modalConfirm: { show: false, message: '', action: null },
 
-        // Variables
-        search: '', invSearch: '', posFilter: 'all', invFilter: 'all', searchWallet: '',
-        mFilter: 'قيد الانتظار', customerSearch: '', 
-        cart: [], shopCash: 0, debtors: [], customers: [], scanTarget: '', html5QrcodeScanner: null,
+        // البيانات الآتية من السيرفر
+        inventory: [], sales: [], maintenance: [], wallets: [],
+        expenses: [], customers: [], users: [], settings: [],
         
-        filterDate: { from: '', to: '', month: '' },
+        // بيانات محلية
+        cart: [],
+        shopCash: 0,
+        debtors: [],
+        html5QrcodeScanner: null,
 
-        // ======== INIT & DATE FUNCTIONS ========
+        // ==========================================
+        // 2. التهيئة الأولية (Initialization)
+        // ==========================================
         init() {
-            this.setTodayFilter();
-            const saved = localStorage.getItem('sa7by_session');
-            if (saved) { 
-                try { 
-                    this.user = JSON.parse(saved); 
-                    this.isLoggedIn = true; 
-                    this.fetchData(); 
-                } catch (e) { this.logout(); } 
-            }
-        },
-        getLocalDate() {
-            const d = new Date(); return d.toLocaleDateString('en-CA');
-        },
-        getFirstDayOfMonth() {
-            const d = new Date();
-            const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0');
-            return `${year}-${month}-01`;
-        },
-        setTodayFilter() {
-            const today = this.getLocalDate();
-            this.filterDate.from = today; this.filterDate.to = today; this.filterDate.month = '';
-        },
-        setMonthFilter() {
-            const d = new Date();
-            this.filterDate.from = this.getFirstDayOfMonth();
-            const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-            this.filterDate.to = lastDay.toLocaleDateString('en-CA');
-            this.filterDate.month = '';
-        },
-        isDateInRange(dateString) {
-            if (!dateString) return false;
-            const dStr = new Date(dateString).toLocaleDateString('en-CA');
-            return dStr >= this.filterDate.from && dStr <= this.filterDate.to;
-        },
-        showConfirm(message, callback) { 
-            this.modalConfirm = { show: true, message: message, onConfirm: callback }; 
-        },
-        executeConfirm() { 
-            if(this.modalConfirm.onConfirm) this.modalConfirm.onConfirm(); 
-            this.modalConfirm.show = false; 
-        },
-
-        // ======== API & AUTH ========
-        async callApi(action, dataObj = {}) {
-            try { 
-                const response = await fetch(API_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                    body: JSON.stringify({ action: action, data: dataObj }) 
-                });
-                return await response.json(); 
-            } catch (error) { return { success: false, error: "فشل الاتصال." }; }
-        },
-        async login() {
-            if (!this.loginForm.username || !this.loginForm.password) return alert("أدخل البيانات!");
-            this.loading = true; 
-            const res = await this.callApi('login', this.loginForm); 
-            this.loading = false;
-            if (res && res.success) { 
-                this.user = res.user; this.isLoggedIn = true; 
-                localStorage.setItem('sa7by_session', JSON.stringify(res.user)); 
+            const savedUser = localStorage.getItem('2m_user');
+            if (savedUser) {
+                this.user = JSON.parse(savedUser);
+                this.isLoggedIn = true;
                 this.fetchData();
-            } else { alert(res ? res.error : "خطأ في تسجيل الدخول"); }
-        },
-        logout() { localStorage.removeItem('sa7by_session'); location.reload(); },
-        async fetchData() {
-            this.loading = true; const res = await this.callApi('getAllData');
-            if (res && !res.error) { 
-                this.data = res; 
-                const cash = (res.Settings || []).find(s => s.Key === "Shop_Cash" || s.Setting_Name === "Shop_Cash" || s[0] === "Shop_Cash");
-                this.shopCash = cash ? Number(cash.Value || cash[1] || 0) : 0; 
             }
-            this.loading = false;
+            this.setTodayFilter();
         },
 
-        // ======== INVENTORY & POS ========
-        get inventory() { return this.data.Inventory || []; },
-        get processedInventory() {
-            let list = this.inventory;
-            if (this.invSearch.trim() !== '') {
-                const q = this.invSearch.toLowerCase().trim();
-                list = list.filter(i => String(i.Product_Name || '').toLowerCase().includes(q) || String(i.Code || '').includes(q));
+        // ==========================================
+        // 3. الاتصال بالسيرفر (API Integration)
+        // ==========================================
+        async apiCall(action, data = {}) {
+            if (!SCRIPT_URL || SCRIPT_URL === "ضع_رابط_الـ_Web_App_هنا") {
+                alert("يرجى إضافة رابط الـ Web App في ملف script.js");
+                return null;
             }
-            if (this.invFilter === 'shortages') return list.filter(i => Number(i.Stock) <= Number(i.Min_Stock || 1));
-            return list;
+            
+            this.loading = true;
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: action, data: data }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' } // Apps Script requirement
+                });
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error);
+                return result;
+            } catch (error) {
+                alert('حدث خطأ: ' + error.message);
+                console.error(error);
+                return null;
+            } finally {
+                this.loading = false;
+            }
         },
+
+        async login() {
+            if (!this.loginForm.username || !this.loginForm.password) return alert("أدخل البيانات");
+            const res = await this.apiCall('login', this.loginForm);
+            if (res && res.user) {
+                this.user = res.user;
+                this.isLoggedIn = true;
+                localStorage.setItem('2m_user', JSON.stringify(this.user));
+                this.fetchData();
+            }
+        },
+
+        logout() {
+            this.isLoggedIn = false;
+            this.user = { username: '', role: '' };
+            localStorage.removeItem('2m_user');
+            this.currentTab = 'home';
+        },
+
+        async fetchData() {
+            const res = await this.apiCall('getAllData');
+            if (res) {
+                this.inventory = res.Inventory || [];
+                this.sales = res.Sales || [];
+                this.maintenance = res.Maintenance || [];
+                this.wallets = res.Wallets || [];
+                this.expenses = res.Expenses || [];
+                this.customers = res.Customers || [];
+                this.users = res.Users || [];
+                this.settings = res.Settings || [];
+                
+                // تحديث كاش المحل
+                const cashSetting = this.settings.find(s => s.Key === 'Shop_Cash');
+                this.shopCash = cashSetting ? Number(cashSetting.Value) : 0;
+                
+                this.calculateDebtors();
+            }
+        },
+
+        // ==========================================
+        // 4. الدوال الحسابية والفلترة (Computed/Getters)
+        // ==========================================
+        get cartTotal() {
+            return this.cart.reduce((sum, item) => sum + (Number(item.price) * Number(item.qty)), 0);
+        },
+
+        getTotalWalletBalance() {
+            return this.dynamicWallets.reduce((sum, w) => sum + this.calcWallet(w.name).balance, 0);
+        },
+
+        getTodaySales() {
+            const today = this.getTodayString();
+            return this.sales
+                .filter(s => s.Date === today)
+                .reduce((sum, s) => sum + Number(s.Total || 0), 0);
+        },
+
+        getTotalDebts() {
+            return this.debtors.reduce((sum, d) => sum + Number(d.totalDebt), 0);
+        },
+
         get filteredInventoryPOS() {
-            const q = this.search.toLowerCase().trim();
-            return this.inventory.filter(i => {
-                const matchesSearch = !q || String(i.Product_Name || '').toLowerCase().includes(q) || String(i.Code || '').includes(q);
-                const category = String(i.Category || '');
-                const matchesTab = this.posFilter === 'all' ? !category.includes('هاتف') : this.posFilter === 'new' ? category === 'هاتف جديد' : this.posFilter === 'used' ? category === 'هاتف مستعمل' : true;
-                return matchesSearch && matchesTab;
+            let items = this.inventory;
+            if (this.search) {
+                items = items.filter(i => 
+                    String(i.Product_Name).includes(this.search) || 
+                    String(i.Code).includes(this.search)
+                );
+            }
+            if (this.posFilter === 'new') return items.filter(i => String(i.Category).includes('جديد'));
+            if (this.posFilter === 'used') return items.filter(i => String(i.Category).includes('مستعمل'));
+            return items.filter(i => !String(i.Category).includes('جديد') && !String(i.Category).includes('مستعمل'));
+        },
+
+        get processedInventory() {
+            let items = this.inventory;
+            if (this.invSearch) {
+                const s = this.invSearch.toLowerCase();
+                items = items.filter(i => 
+                    String(i.Product_Name).toLowerCase().includes(s) || 
+                    String(i.Code).toLowerCase().includes(s)
+                );
+            }
+            if (this.invFilter === 'shortages') {
+                items = items.filter(i => Number(i.Stock) <= Number(i.Min_Stock || 1));
+            }
+            return items;
+        },
+
+        get filteredMaintenance() {
+            return this.maintenance.filter(m => m.Status === this.mFilter).reverse();
+        },
+
+        get dynamicWallets() {
+            const walletNames = [...new Set(this.wallets.map(w => w.Wallet_Name).filter(n => n))];
+            return walletNames.map(name => {
+                const limitSetting = this.settings.find(s => s.Key === 'Limit_' + name);
+                return { name: name, limit: limitSetting ? Number(limitSetting.Value) : 0 };
             });
         },
-        addToCart(product) {
-            if (product.Stock <= 0) return alert('هذا المنتج نفد من المخزن!');
-            const item = this.cart.find(c => c.code === product.Code);
-            if (item) item.qty++; else this.cart.push({ code: product.Code, name: product.Product_Name, price: product.Selling_Price, qty: 1 });
-            this.checkout.paid = this.cartTotal;
+
+        get filteredCustomers() {
+            if (!this.customerSearch) return [];
+            return this.customers
+                .filter(c => String(c.Name).includes(this.customerSearch))
+                .map(c => c.Name);
         },
-        get cartTotal() { return this.cart.reduce((s, i) => s + (Number(i.price) * Number(i.qty)), 0); },
+
+        calcWallet(name) {
+            let incoming = 0, outgoing = 0;
+            this.wallets.filter(w => w.Wallet_Name === name).forEach(w => {
+                if (w.Type === 'وارد') incoming += Number(w.Amount || 0);
+                if (w.Type === 'صادر') outgoing += Number(w.Amount || 0);
+            });
+            return { incoming, outgoing, balance: incoming - outgoing };
+        },
+
+        calcWalletFiltered(name) {
+            let incoming = 0, outgoing = 0;
+            this.wallets.filter(w => w.Wallet_Name === name && this.isDateInRange(w.Date)).forEach(w => {
+                if (w.Type === 'وارد') incoming += Number(w.Amount || 0);
+                if (w.Type === 'صادر') outgoing += Number(w.Amount || 0);
+            });
+            return { incoming, outgoing };
+        },
+
+        // ==========================================
+        // 5. العمليات والمبيعات (Operations)
+        // ==========================================
+        addToCart(item) {
+            if (Number(item.Stock) <= 0) return alert("هذا المنتج نفد من المخزن");
+            const existing = this.cart.find(c => c.code === item.Code);
+            if (existing) {
+                if (existing.qty >= item.Stock) return alert("الكمية المتاحة لا تكفي");
+                existing.qty++;
+            } else {
+                this.cart.push({
+                    code: item.Code,
+                    name: item.Product_Name,
+                    price: item.Selling_Price,
+                    cost: item.Cost_Price,
+                    qty: 1,
+                    category: item.Category
+                });
+            }
+        },
+
         async confirmSale() {
-            if (!this.cart.length) return; 
-            if (this.checkout.type === 'Wallet' && !this.checkout.walletName) return alert('برجاء اختيار المحفظة');
-            this.loading = true;
-            const saleData = { total: this.cartTotal, paid: this.checkout.paid === '' ? this.cartTotal : this.checkout.paid, customer: this.checkout.customer || 'عميل نقدي', paymentType: this.checkout.type, Payment_Type: this.checkout.type, walletName: this.checkout.walletName, Wallet_Name: this.checkout.walletName, isPurchase: false, updateCashOrWallet: this.checkout.updateCashOrWallet, items: this.cart, user: this.user.username };
-            await this.callApi('processSale', saleData);
-            this.cart = []; this.showCart = false; this.checkout = { customer: '', type: 'Cash', paid: '', walletName: '', isPurchase: false, updateCashOrWallet: true };
-            this.fetchData();
+            if (this.cart.length === 0) return alert("السلة فارغة");
+            if (this.checkout.type === 'Wallet' && !this.checkout.walletName) return alert("اختر المحفظة");
+            
+            const total = this.cartTotal;
+            const paid = Number(this.checkout.paid);
+            
+            if (this.checkout.type === 'Credit' && paid >= total) {
+                this.checkout.type = 'Cash'; // تحويل تلقائي لكاش إذا دفع المبلغ كاملاً
+            }
+
+            const payload = {
+                total: total,
+                paid: paid,
+                customer: this.checkout.customer || 'عميل نقدي',
+                paymentType: this.checkout.type,
+                walletName: this.checkout.walletName,
+                items: this.cart,
+                user: this.user.username,
+                updateCashOrWallet: true
+            };
+
+            const res = await this.apiCall('processSale', payload);
+            if (res) {
+                alert("تمت عملية البيع بنجاح!");
+                this.cart = [];
+                this.showCart = false;
+                this.checkout = { customer: '', type: 'Cash', paid: 0, walletName: '' };
+                this.fetchData();
+            }
         },
-        openProductModal(cat) { 
-            this.isEditingProduct = false; 
-            this.pForm = { Category: cat, Code: '', Product_Name: '', Cost_Price: '', Selling_Price: '', Stock: 1, Min_Stock: 1, paymentType: 'Cash', walletName: '', updateCashOrWallet: true };
-            this.showProductModal = true; 
+
+        // ==========================================
+        // 6. دوال مساعدة وتحكم في الواجهة (Helpers & UI)
+        // ==========================================
+        getMClass(status) {
+            switch(status) {
+                case 'قيد الانتظار': return 'border-l-4 border-amber-500';
+                case 'تم التصليح': return 'border-l-4 border-blue-500';
+                case 'تم التسليم': return 'border-l-4 border-emerald-500 opacity-70';
+                case 'مرفوض': return 'border-l-4 border-rose-500 opacity-70';
+                default: return 'border-l-4 border-slate-300';
+            }
         },
-        openInventoryProduct(item) {
-            this.isEditingProduct = true;
-            this.pForm = { Category: item.Category || '', Code: item.Code || '', Product_Name: item.Product_Name || '', Cost_Price: item.Cost_Price || '', Selling_Price: item.Selling_Price || '', Stock: item.Stock || 0, Min_Stock: item.Min_Stock || 1, paymentType: 'Cash', walletName: '', updateCashOrWallet: false };
+
+        setTodayFilter() {
+            const today = this.getTodayString();
+            this.filterDate = { from: today, to: today };
+        },
+
+        setMonthFilter() {
+            const date = new Date();
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            this.filterDate = { from: `${y}-${m}-01`, to: this.getTodayString() };
+        },
+
+        getTodayString() {
+            const date = new Date();
+            const offset = date.getTimezoneOffset() * 60000;
+            return (new Date(date.getTime() - offset)).toISOString().split('T')[0];
+        },
+
+        isDateInRange(dateStr) {
+            if (!this.filterDate.from && !this.filterDate.to) return true;
+            const d = new Date(dateStr);
+            const from = this.filterDate.from ? new Date(this.filterDate.from) : new Date('2000-01-01');
+            const to = this.filterDate.to ? new Date(this.filterDate.to) : new Date('2100-01-01');
+            return d >= from && d <= to;
+        },
+
+        calculateDebtors() {
+            const debts = {};
+            this.sales.forEach(s => {
+                if (s.Payment_Type === 'Credit') {
+                    const debt = Number(s.Total) - Number(s.Paid);
+                    if (debt > 0) {
+                        const cust = s.Customer || 'غير محدد';
+                        debts[cust] = (debts[cust] || 0) + debt;
+                    }
+                }
+            });
+            this.debtors = Object.keys(debts).map(k => ({ name: k, totalDebt: debts[k] }));
+        },
+
+        showDebtors() {
+            this.calculateDebtors();
+            this.showDebtorsModal = true;
+        },
+
+        showCustomers() {
+            // تحديث ديون العملاء قبل العرض
+            this.calculateDebtors();
+            this.customers = this.customers.map(c => {
+                const debtObj = this.debtors.find(d => d.name === c.Name);
+                return { ...c, totalDebt: debtObj ? debtObj.totalDebt : 0 };
+            });
+            this.showCustomersModal = true;
+        },
+
+        // ==========================================
+        // 7. المخزن وإدارة الأصناف (Inventory & Products)
+        // ==========================================
+        openProductModal(category) {
+            this.isEditingProduct = false;
+            this.pForm = {
+                Code: '', Product_Name: '', Category: category,
+                Cost_Price: '', Selling_Price: '', Stock: 1, Min_Stock: 1
+            };
             this.showProductModal = true;
         },
-        async saveProduct() {
-            if (!this.pForm.Code || !this.pForm.Product_Name || !this.pForm.Selling_Price) return alert("أدخل البيانات الأساسية");
-            this.loading = true;
-            this.pForm.Total_Cost = (Number(this.pForm.Cost_Price) || 0) * (Number(this.pForm.Stock) || 1); 
-            this.pForm.Payment_Type = this.pForm.paymentType; 
-            this.pForm.Wallet_Name = this.pForm.walletName;
-            await this.callApi('saveProduct', this.pForm); 
-            this.showProductModal = false; this.fetchData();
+
+        openInventoryProduct(item) {
+            this.isEditingProduct = true;
+            this.pForm = JSON.parse(JSON.stringify(item));
+            this.showProductModal = true;
         },
+
         checkExistingProduct() {
-            if(!this.pForm.Code) return;
-            const existing = this.inventory.find(i => i.Code === this.pForm.Code);
-            if (existing) {
-                this.pForm.Product_Name = existing.Product_Name || this.pForm.Product_Name; 
-                this.pForm.Selling_Price = existing.Selling_Price || this.pForm.Selling_Price; 
-                this.pForm.Cost_Price = existing.Cost_Price || this.pForm.Cost_Price; 
-                this.pForm.Min_Stock = existing.Min_Stock || this.pForm.Min_Stock;
+            if (!this.pForm.Code) return;
+            const existing = this.inventory.find(i => String(i.Code) === String(this.pForm.Code));
+            if (existing && !this.isEditingProduct) {
+                if (confirm('المنتج موجود بالفعل! هل تريد تعديله بدلاً من إضافته؟')) {
+                    this.isEditingProduct = true;
+                    this.pForm = JSON.parse(JSON.stringify(existing));
+                }
             }
         },
 
-        // ======== FINANCIAL STATS & REVENUE ========
-        getTodaySales() {
-            const today = this.getLocalDate();
-            return (this.data.Sales || []).reduce((total, sale) => {
-                if (sale.Date && new Date(sale.Date).toLocaleDateString('en-CA') === today) return total + Number(sale.Total || 0);
-                return total;
-            }, 0);
-        },
-        getFilteredProfits() {
-            let newPhone = 0, usedPhone = 0, general = 0, wallet = 0;
-            (this.data.Wallets || []).forEach(w => { if (this.isDateInRange(w.Date)) wallet += Number(w.Profit_Margin || w.profit || 0); });
-            (this.data.Sales || []).forEach(sale => {
-                if (this.isDateInRange(sale.Date)) {
-                    try {
-                        let items = JSON.parse(sale.Items_JSON || "[]");
-                        items.forEach(item => {
-                            let invItem = (this.data.Inventory || []).find(i => i.Code == item.code); 
-                            let cost = invItem ? Number(invItem.Cost_Price || 0) : 0;
-                            let profit = (Number(item.price) - cost) * Number(item.qty);
-                            if (invItem) { 
-                                if (invItem.Category === 'هاتف جديد') newPhone += profit; 
-                                else if (invItem.Category === 'هاتف مستعمل') usedPhone += profit;
-                                else general += profit; 
-                            } else general += profit;
-                        }); 
-                    } catch (e) { }
-                } 
-            }); 
-            return { newPhone, usedPhone, general, wallet };
-        },
-        getTotalExpenses() {
-            return (this.data.Expenses || []).filter(e => this.isDateInRange(e.Date)).reduce((sum, e) => sum + Number(e.Amount || 0), 0);
+        async saveProduct() {
+            if (!this.pForm.Product_Name || !this.pForm.Code || !this.pForm.Selling_Price) {
+                return alert("يرجى إكمال البيانات الأساسية");
+            }
+            
+            // بيانات الدفع إذا كان منتجاً جديداً (شراء)
+            if (!this.isEditingProduct) {
+                const totalCost = Number(this.pForm.Cost_Price || 0) * Number(this.pForm.Stock || 1);
+                if (totalCost > 0) {
+                    const payMethod = prompt(`إجمالي التكلفة: ${totalCost} ج.\nاكتب 'كاش' للدفع من الدرج، أو اكتب اسم المحفظة للدفع منها:`, "كاش");
+                    if (payMethod === null) return; // تم الإلغاء
+                    
+                    this.pForm.updateCashOrWallet = true;
+                    if (payMethod === 'كاش') {
+                        this.pForm.paymentType = 'Cash';
+                    } else {
+                        this.pForm.paymentType = 'Wallet';
+                        this.pForm.walletName = payMethod;
+                    }
+                }
+            }
+
+            this.pForm.User = this.user.username;
+            const res = await this.apiCall('saveProduct', this.pForm);
+            if (res) {
+                alert("تم الحفظ بنجاح");
+                this.showProductModal = false;
+                this.fetchData();
+            }
         },
 
-        // ======== WALLETS & CASH ========
-        get dynamicWallets() { 
-            return (this.data.Settings || []).filter(s => { 
-                const key = s.Key || s.Setting_Name || s[0]; return key && key.toString().startsWith("Limit_"); 
-            }).map(s => { 
-                const key = s.Key || s.Setting_Name || s[0]; const val = s.Value || s[1] || 0; 
-                return { name: key.replace("Limit_", ""), limit: Number(val) }; 
-            });
-        },
-        calcWallet(name) { 
-            const txs = (this.data.Wallets || []).filter(w => String(w.Wallet_Name || "").trim() === String(name).trim()); 
-            let incoming = 0, outgoing = 0;
-            txs.forEach(t => { 
-                const amt = Number(t.Amount || 0); 
-                if (String(t.Type || "").trim() === 'وارد') incoming += amt; else if (String(t.Type || "").trim() === 'صادر') outgoing += amt; 
-            });
-            return { incoming, outgoing, balance: incoming - outgoing }; 
-        },
-        calcWalletFiltered(name) { 
-            const txs = (this.data.Wallets || []).filter(w => String(w.Wallet_Name || "").trim() === String(name).trim() && this.isDateInRange(w.Date));
-            let incoming = 0, outgoing = 0; 
-            txs.forEach(t => { 
-                const amt = Number(t.Amount || 0); 
-                if (String(t.Type || "").trim() === 'وارد') incoming += amt; else if (String(t.Type || "").trim() === 'صادر') outgoing += amt; 
-            });
-            return { incoming, outgoing }; 
-        },
-        getTotalWalletBalance() { 
-            let total = 0; this.dynamicWallets.forEach(w => { total += this.calcWallet(w.name).balance; }); return total; 
-        },
-        get filteredWallets() {
-            const q = this.searchWallet.toLowerCase(); 
-            if (!q) return this.dynamicWallets;
-            return this.dynamicWallets.filter(w => String(w.name || '').toLowerCase().includes(q));
-        },
-        openWalletTxModal(type) { 
-            this.wTxForm = { type: type, wallet: '', amount: '', profit: '', notes: '', fromCash: false };
-            this.showWalletTxModal = true; 
-        },
-        async submitWalletTx() { 
-            if (!this.wTxForm.wallet || !this.wTxForm.amount) return alert("الرجاء اختيار المحفظة وكتابة المبلغ"); 
-            this.loading = true; 
-            await this.callApi('saveWalletTransaction', { wallet: this.wTxForm.wallet, type: this.wTxForm.type, amount: Number(this.wTxForm.amount), notes: this.wTxForm.notes, user: this.user.username, profit: Number(this.wTxForm.profit || 0), fromCash: this.wTxForm.fromCash });
-            this.showWalletTxModal = false; this.fetchData(); 
-        },
-        addNewWallet() { this.modalAddWallet = { show: true, name: '', limit: 50000 }; },
-        async submitNewWallet() { 
-            if(!this.modalAddWallet.name) return; 
-            this.modalAddWallet.show = false; this.loading = true; 
-            await this.callApi('saveWalletConfig', { name: this.modalAddWallet.name, limit: this.modalAddWallet.limit }); this.fetchData();
-        },
-        async deleteWallet(name) { 
-            this.showConfirm('متأكد من حذف محفظة ' + name + ' بالكامل؟', async () => { 
-                this.loading = true; await this.callApi('deleteWallet', { name: name }); this.fetchData(); 
-            });
-        },
-        updateShopCash() { this.modalUpdateCash = { show: true, amount: this.shopCash }; },
-        async submitUpdateCash() { 
-            this.modalUpdateCash.show = false; this.loading = true; 
-            await this.callApi('setShopCash', { amount: Number(this.modalUpdateCash.amount) }); this.fetchData(); 
+        // ==========================================
+        // 8. الصيانة (Maintenance)
+        // ==========================================
+        openMaintenanceModal() {
+            this.mForm = { Client_Name: '', Phone_Number: '', Phone_Type: '', Issue: '', Expected_Cost: '' };
+            this.showMaintenanceModal = true;
         },
 
-        // ======== DEBTORS & CUSTOMERS ========
-        getTotalDebts() { 
-            return (this.data.Sales || []).reduce((total, sale) => {
-                if (this.isDateInRange(sale.Date) && sale.Payment_Type === 'Credit') return total + (Number(sale.Total || 0) - Number(sale.Paid || 0));
-                return total;
-            }, 0); 
-        },
-        showDebtors() { 
-            const debts = {}; 
-            (this.data.Sales || []).forEach(sale => { 
-                if (sale.Payment_Type === 'Credit') { 
-                    const customer = sale.Customer || 'عميل نقدي'; const debt = Number(sale.Total || 0) - Number(sale.Paid || 0); 
-                    if (debt > 0) debts[customer] = (debts[customer] || 0) + debt; 
-                } 
-            });
-            this.debtors = Object.keys(debts).map(name => ({ name, totalDebt: debts[name] })); 
-            this.showDebtorsModal = true; 
-        },
-        get filteredCustomers() {
-            if (!this.customerSearch || this.customerSearch.length < 2) return []; 
-            const search = this.customerSearch.toLowerCase(); const customers = new Set();
-            (this.data.Sales || []).forEach(sale => { if (sale.Customer && sale.Customer.toLowerCase().includes(search)) customers.add(sale.Customer); });
-            (this.data.Customers || []).forEach(customer => { if (customer.Name && customer.Name.toLowerCase().includes(search)) customers.add(customer.Name); });
-            return Array.from(customers).filter(name => name.toLowerCase().includes(search));
-        },
-        showCustomers() { 
-            this.customers = (this.data.Customers || []).map(customer => { 
-                const customerSales = (this.data.Sales || []).filter(sale => sale.Customer === customer.Name); 
-                const totalDebt = customerSales.filter(sale => sale.Payment_Type === 'Credit').reduce((sum, sale) => sum + (Number(sale.Total || 0) - Number(sale.Paid || 0)), 0); 
-                return { ...customer, totalDebt }; 
-            });
-            this.showCustomersModal = true; 
-        },
-        openAddCustomerModal() { this.addCustomerForm = { name: '', phone: '', address: '' }; this.showAddCustomerModal = true; },
-        async addNewCustomer() { 
-            if (!this.addCustomerForm.name) return alert("أدخل اسم العميل"); 
-            this.loading = true; await this.callApi('addCustomer', this.addCustomerForm); 
-            this.showAddCustomerModal = false; this.fetchData(); 
-        },
-        async updateSalePayment() { 
-            this.loading = true; await this.callApi('updateSalePayment', this.editPaymentForm); 
-            this.editPaymentModal = false; this.fetchData(); 
+        async saveNewMaintenance() {
+            if (!this.mForm.Phone_Type || !this.mForm.Issue) return alert("أدخل نوع الجهاز والعطل");
+            this.mForm.User = this.user.username;
+            const res = await this.apiCall('saveMaintenance', this.mForm);
+            if (res) {
+                alert("تم فتح تذكرة الصيانة");
+                this.showMaintenanceModal = false;
+                this.fetchData();
+            }
         },
 
-        // ======== MAINTENANCE ========
-        get filteredMaintenance() {
-            if (!this.data.Maintenance) return [];
-            return this.data.Maintenance.filter(m => String(m.Status || '').trim() === this.mFilter).reverse();
-        },
-        getMClass(status) { 
-            status = String(status).trim(); 
-            if (status === 'قيد الانتظار') return 'm-pending'; if (status === 'تم التصليح') return 'm-repaired';
-            if (status === 'تم التسليم') return 'm-delivered'; return 'm-rejected'; 
-        },
-        getFilteredMaintStats() {
-            let totalPaid = 0, totalCost = 0;
-            (this.data.Maintenance || []).forEach(m => { 
-                if (m.Status === 'تم التسليم' && this.isDateInRange(m.Date)) { 
-                    totalPaid += Number(m.paid || m.Paid || 0); totalCost += Number(m.Cost_Price || 0); 
-                } 
-            });
-            return { totalPaid, totalCost, netProfit: totalPaid - totalCost };
-        },
-        openMaintenanceModal() { this.mForm = { Client_Name: '', Phone_Number: '', Phone_Type: '', Issue: '', Expected_Cost: '' }; this.showMaintenanceModal = true; },
-        async saveNewMaintenance() { 
-            this.loading = true; 
-            await this.callApi('saveMaintenance', { Ticket_ID: "T-" + Date.now().toString().slice(-6), Status: 'قيد الانتظار', Client_Name: this.mForm.Client_Name || "بدون اسم", Phone_Number: this.mForm.Phone_Number || "", Phone_Type: this.mForm.Phone_Type || "غير محدد", Issue: this.mForm.Issue || "غير محدد", Expected_Cost: this.mForm.Expected_Cost || 0, paid: 0, Cost_Price: 0, User: this.user.username });
-            this.showMaintenanceModal = false; this.fetchData(); 
-        },
-        openEditMaintenanceModal(m) { 
-            this.mEditForm = { Ticket_ID: m.Ticket_ID, Status: m.Status || 'قيد الانتظار', Expected_Cost: m.Expected_Cost || 0, paid: m.paid || m.Paid || 0, Cost_Price: m.Cost_Price || 0 }; 
-            this.showEditMaintenanceModal = true; 
-        },
-        async submitEditMaintenance() { 
-            this.loading = true; 
-            await this.callApi('updateMaintenance', { Ticket_ID: this.mEditForm.Ticket_ID, Status: this.mEditForm.Status, Expected_Cost: this.mEditForm.Expected_Cost || 0, paid: this.mEditForm.paid || 0, Cost_Price: this.mEditForm.Cost_Price || 0 });
-            this.showEditMaintenanceModal = false; this.fetchData(); 
+        openEditMaintenanceModal(m) {
+            this.mEditForm = JSON.parse(JSON.stringify(m));
+            this.showEditMaintenanceModal = true;
         },
 
-        // ======== EXPENSES & USERS ========
+        async submitEditMaintenance() {
+            const res = await this.apiCall('updateMaintenance', this.mEditForm);
+            if (res) {
+                alert("تم التحديث");
+                this.showEditMaintenanceModal = false;
+                this.fetchData();
+            }
+        },
+
+        // ==========================================
+        // 9. الإدارة والمصروفات (Management)
+        // ==========================================
+        updateShopCash() {
+            this.modalUpdateCash.amount = this.shopCash;
+            this.modalUpdateCash.show = true;
+        },
+
+        async submitUpdateCash() {
+            const res = await this.apiCall('setShopCash', { amount: Number(this.modalUpdateCash.amount) });
+            if (res) {
+                this.modalUpdateCash.show = false;
+                this.fetchData();
+            }
+        },
+
+        openWalletTxModal(type) {
+            this.wTxForm = { type: type, wallet: '', amount: '', notes: '' };
+            this.showWalletTxModal = true;
+        },
+
+        async submitWalletTx() {
+            if (!this.wTxForm.wallet || !this.wTxForm.amount) return alert("أكمل البيانات");
+            this.wTxForm.user = this.user.username;
+            this.wTxForm.fromCash = true; // نفترض أن التحويل بين المحفظة والكاش
+            
+            const res = await this.apiCall('saveWalletTransaction', this.wTxForm);
+            if (res) {
+                alert("تم التنفيذ");
+                this.showWalletTxModal = false;
+                this.fetchData();
+            }
+        },
+
         openAddExpenseModal() {
-            this.expenseForm = { description: '', amount: '', notes: '', paymentMethod: 'Cash', walletName: '', updateCashOrWallet: true };
+            this.expenseForm = { description: '', amount: '', notes: '', paymentMethod: 'Cash', walletName: '' };
             this.showAddExpenseModal = true;
         },
+
         async submitExpense() {
-            if(!this.expenseForm.description || !this.expenseForm.amount) return alert("يرجى إدخال بيان المصروف والمبلغ.");
-            this.loading = true;
-            await this.callApi('saveExpense', { ...this.expenseForm, user: this.user.username });
-            this.showAddExpenseModal = false; this.fetchData();
-        },
-        openAddUserModal() { this.addUserForm = { username: '', password: '', role: 'worker' }; this.showAddUserModal = true; },
-        async addNewUser() { 
-            if (!this.addUserForm.username || !this.addUserForm.password) return alert("أدخل اسم المستخدم"); 
-            this.loading = true; await this.callApi('addUser', this.addUserForm);
-            this.showAddUserModal = false; this.fetchData(); 
+            if (!this.expenseForm.description || !this.expenseForm.amount) return alert("البيانات ناقصة");
+            this.expenseForm.user = this.user.username;
+            this.expenseForm.updateCashOrWallet = true; // خصم تلقائي
+            const res = await this.apiCall('saveExpense', this.expenseForm);
+            if (res) {
+                alert("تم التسجيل");
+                this.showAddExpenseModal = false;
+                this.fetchData();
+            }
         },
 
-        // ======== QR SCANNER ========
-        openScanner(target) {
-            this.scanTarget = target; this.showScannerModal = true;
-            this.$nextTick(() => {
-                this.html5QrcodeScanner = new Html5Qrcode("reader");
-                this.html5QrcodeScanner.start(
-                    { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
-                    (decodedText) => { 
-                        if(this.scanTarget === 'pos') this.search = decodedText; 
-                        else if(this.scanTarget === 'invSearch') this.invSearch = decodedText;
-                        else if(this.scanTarget === 'pForm.Code') { this.pForm.Code = decodedText; this.checkExistingProduct(); }
-                        this.closeScanner(); 
-                    },
-                    (errorMessage) => { }
-                ).catch(err => { alert("يرجى إعطاء صلاحية الكاميرا للمتصفح."); this.closeScanner(); });
+        // ==========================================
+        // 10. التقارير والإحصائيات المتقدمة (Reports)
+        // ==========================================
+        getFilteredProfits() {
+            let p = { newPhone: 0, usedPhone: 0, wallet: 0, general: 0 };
+            
+            // أرباح المبيعات
+            this.sales.filter(s => this.isDateInRange(s.Date)).forEach(s => {
+                try {
+                    const items = JSON.parse(s.Items_JSON || '[]');
+                    items.forEach(item => {
+                        const profit = (Number(item.price) - Number(item.cost)) * Number(item.qty);
+                        if (String(item.category).includes('جديد')) p.newPhone += profit;
+                        else if (String(item.category).includes('مستعمل')) p.usedPhone += profit;
+                        else p.general += profit;
+                    });
+                } catch(e) {}
             });
+
+            // أرباح المحافظ
+            this.wallets.filter(w => this.isDateInRange(w.Date) && w.Type === 'وارد').forEach(w => {
+                p.wallet += Number(w.Profit_Margin || 0);
+            });
+
+            return p;
         },
+
+        getFilteredMaintStats() {
+            let revenue = 0, costs = 0;
+            this.maintenance.filter(m => this.isDateInRange(m.Date) && m.Status === 'تم التسليم').forEach(m => {
+                revenue += Number(m.paid || 0);
+                costs += Number(m.Cost_Price || 0);
+            });
+            return { revenue, costs, netProfit: revenue - costs };
+        },
+
+        getTotalExpenses() {
+            return this.expenses
+                .filter(e => this.isDateInRange(e.Date))
+                .reduce((sum, e) => sum + Number(e.Amount || 0), 0);
+        },
+
+        // ==========================================
+        // 11. الماسح الضوئي (QR/Barcode Scanner)
+        // ==========================================
+        openScanner(targetModel) {
+            this.showScannerModal = true;
+            setTimeout(() => {
+                if (!this.html5QrcodeScanner) {
+                    this.html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, /* verbose= */ false);
+                }
+                this.html5QrcodeScanner.render((decodedText) => {
+                    // نجاح المسح
+                    if (targetModel === 'pos') {
+                        this.search = decodedText;
+                        const item = this.inventory.find(i => String(i.Code) === decodedText);
+                        if(item) this.addToCart(item);
+                    } else if (targetModel === 'invSearch') {
+                        this.invSearch = decodedText;
+                    } else if (targetModel === 'pForm.Code') {
+                        this.pForm.Code = decodedText;
+                        this.checkExistingProduct();
+                    }
+                    this.closeScanner();
+                }, (error) => {
+                    // فشل المسح (يتم تجاهله برمجياً لمنع التوقف)
+                });
+            }, 300);
+        },
+
         closeScanner() {
-            if (this.html5QrcodeScanner) { this.html5QrcodeScanner.stop().then(() => { this.html5QrcodeScanner.clear(); }).catch(err => console.log(err)); }
             this.showScannerModal = false;
+            if (this.html5QrcodeScanner) {
+                this.html5QrcodeScanner.clear().catch(e => console.error("Failed to clear scanner", e));
+            }
         }
-    }));
-});
+    }))
+})
