@@ -3,7 +3,7 @@
 
 // !! هام جداً: ضع رابط تطبيق Google Apps Script الخاص بك هنا !!
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9qeiyuQrrjU55w7iemMxsHj2pB0A8woOWF_HEJRuJkXI_AagE4YJkrIdPhP3uDDCO/exec"; 
-
+let globalScanner = null;
 document.addEventListener('alpine:init', () => {
     Alpine.data('erpApp', () => ({
         // ==========================================
@@ -73,7 +73,7 @@ document.addEventListener('alpine:init', () => {
         cart: [],
         shopCash: 0,
         debtors: [],
-        html5QrcodeScanner: null,
+       
 
         // ==========================================
         // 2. التهيئة (Initialization)
@@ -570,33 +570,35 @@ document.addEventListener('alpine:init', () => {
         // ==========================================
         // 11. الماسح الضوئي (QR Scanner)
         // ==========================================
-        openScanner(targetModel) {
-            this.showScannerModal = true;
-            setTimeout(() => {
-                if (!this.html5QrcodeScanner) {
-                    this.html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
-                }
-                this.html5QrcodeScanner.render((decodedText) => {
-                    if (targetModel === 'pos') {
-                        this.search = decodedText;
-                        const item = this.inventory.find(i => String(i.Code) === decodedText);
-                        if(item) this.addToCart(item);
-                    } else if (targetModel === 'invSearch') {
-                        this.invSearch = decodedText;
-                    } else if (targetModel === 'pForm.Code') {
-                        this.pForm.Code = decodedText;
-                        this.checkExistingProduct();
-                    }
-                    this.closeScanner();
-                }, () => {});
-            }, 300);
-        },
-
-        closeScanner() {
-            this.showScannerModal = false;
-            if (this.html5QrcodeScanner) {
-                this.html5QrcodeScanner.clear().catch(e => console.error("Scanner clear error", e));
-            }
+     openScanner(targetModel) {
+    this.showScannerModal = true;
+    setTimeout(() => {
+        // نستخدم المتغير العام (globalScanner) بدلاً من (this.html5QrcodeScanner)
+        if (!globalScanner) {
+            globalScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
         }
+        globalScanner.render((decodedText) => {
+            if (targetModel === 'pos') {
+                this.search = decodedText;
+                const item = this.inventory.find(i => String(i.Code) === decodedText);
+                if(item) this.addToCart(item);
+            } else if (targetModel === 'invSearch') {
+                this.invSearch = decodedText;
+            } else if (targetModel === 'pForm.Code') {
+                this.pForm.Code = decodedText;
+                this.checkExistingProduct();
+            }
+            this.closeScanner();
+        }, () => {}); // تجاهل أخطاء القراءة المستمرة أثناء عمل الكاميرا
+    }, 300);
+},
+
+closeScanner() {
+    this.showScannerModal = false;
+    // تنظيف المتغير العام عند الإغلاق
+    if (globalScanner) {
+        globalScanner.clear().catch(e => console.error("Scanner clear error", e));
+    }
+}
     }))
 })
