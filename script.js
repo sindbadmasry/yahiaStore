@@ -2,7 +2,7 @@
 ;
 
 // !! هام جداً: ضع رابط تطبيق Google Apps Script الخاص بك هنا !!
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbynYkXkwgTS5u7sODEaRCESwx_Bxq8HdX4wyrmkYdwZ1ouPN8pJpxfy3dq4cVqCHoQ5/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9qeiyuQrrjU55w7iemMxsHj2pB0A8woOWF_HEJRuJkXI_AagE4YJkrIdPhP3uDDCO/exec"; 
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('erpApp', () => ({
@@ -28,17 +28,26 @@ document.addEventListener('alpine:init', () => {
         customerSearch: '',
 
         // النوافذ المنبثقة (Modals)
-        showPanel: false, showDebtorsModal: false, editPaymentModal: false,
-        showWalletTxModal: false, showEditMaintenanceModal: false,
-        showAddExpenseModal: false, showAddUserModal: false,
-        showScannerModal: false, showCart: false, showProductModal: false,
-        showCustomersModal: false, showAddCustomerModal: false,
-        showMaintenanceModal: false, showExpensesReportsModal: false,
+        showPanel: false, 
+        showDebtorsModal: false, 
+        editPaymentModal: false,
+        showWalletTxModal: false, 
+        showEditMaintenanceModal: false,
+        showAddExpenseModal: false, 
+        showAddUserModal: false,
+        showScannerModal: false, 
+        showCart: false, 
+        showProductModal: false,
+        showCustomersModal: false, 
+        showAddCustomerModal: false,
+        showMaintenanceModal: false, 
+        showExpensesReportsModal: false,
 
         // النماذج (Forms)
         loginForm: { username: '', password: '' },
         checkout: { customer: '', type: 'Cash', paid: 0, walletName: '' },
-        pForm: {}, isEditingProduct: false,
+        pForm: {}, 
+        isEditingProduct: false,
         mForm: { Client_Name: '', Phone_Number: '', Phone_Type: '', Issue: '', Expected_Cost: 0 },
         mEditForm: {},
         expenseForm: { description: '', amount: 0, notes: '', paymentMethod: 'Cash', walletName: '' },
@@ -51,8 +60,14 @@ document.addEventListener('alpine:init', () => {
         modalConfirm: { show: false, message: '', action: null },
 
         // البيانات الآتية من السيرفر
-        inventory: [], sales: [], maintenance: [], wallets: [],
-        expenses: [], customers: [], users: [], settings: [],
+        inventory: [], 
+        sales: [], 
+        maintenance: [], 
+        wallets: [],
+        expenses: [], 
+        customers: [], 
+        users: [], 
+        settings: [],
         
         // بيانات محلية
         cart: [],
@@ -252,7 +267,8 @@ document.addEventListener('alpine:init', () => {
             const res = await this.apiCall('processSale', payload);
             if (res) {
                 alert("تمت عملية البيع بنجاح!");
-                this.cart = []; this.showCart = false;
+                this.cart = []; 
+                this.showCart = false;
                 this.checkout = { customer: '', type: 'Cash', paid: 0, walletName: '' };
                 this.fetchData();
             }
@@ -318,7 +334,10 @@ document.addEventListener('alpine:init', () => {
             this.debtors = Object.keys(debts).map(k => ({ name: k, totalDebt: debts[k] }));
         },
 
-        showDebtors() { this.calculateDebtors(); this.showDebtorsModal = true; },
+        showDebtors() { 
+            this.calculateDebtors(); 
+            this.showDebtorsModal = true; 
+        },
         
         showCustomers() {
             this.calculateDebtors();
@@ -384,7 +403,11 @@ document.addEventListener('alpine:init', () => {
             }
             this.pForm.User = this.user.username;
             const res = await this.apiCall('saveProduct', this.pForm);
-            if (res) { alert("تم الحفظ بنجاح"); this.showProductModal = false; this.fetchData(); }
+            if (res) { 
+                alert("تم الحفظ بنجاح"); 
+                this.showProductModal = false; 
+                this.fetchData(); 
+            }
         },
 
         // ==========================================
@@ -399,14 +422,25 @@ document.addEventListener('alpine:init', () => {
             if (!this.mForm.Phone_Type || !this.mForm.Issue) return alert("أدخل نوع الجهاز والعطل");
             this.mForm.User = this.user.username;
             const res = await this.apiCall('saveMaintenance', this.mForm);
-            if (res) { alert("تم فتح تذكرة الصيانة"); this.showMaintenanceModal = false; this.fetchData(); }
+            if (res) { 
+                alert("تم فتح تذكرة الصيانة"); 
+                this.showMaintenanceModal = false; 
+                this.fetchData(); 
+            }
         },
 
-        openEditMaintenanceModal(m) { this.mEditForm = JSON.parse(JSON.stringify(m)); this.showEditMaintenanceModal = true; },
+        openEditMaintenanceModal(m) { 
+            this.mEditForm = JSON.parse(JSON.stringify(m)); 
+            this.showEditMaintenanceModal = true; 
+        },
 
         async submitEditMaintenance() {
             const res = await this.apiCall('updateMaintenance', this.mEditForm);
-            if (res) { alert("تم التحديث"); this.showEditMaintenanceModal = false; this.fetchData(); }
+            if (res) { 
+                alert("تم التحديث"); 
+                this.showEditMaintenanceModal = false; 
+                this.fetchData(); 
+            }
         },
 
         openAddUserModal() {
@@ -417,40 +451,66 @@ document.addEventListener('alpine:init', () => {
         async addNewUser() {
             if(!this.addUserForm.username || !this.addUserForm.password) return alert("أكمل البيانات");
             const res = await this.apiCall('addUser', this.addUserForm);
-            if(res) { alert("تمت إضافة المستخدم"); this.showAddUserModal = false; this.fetchData(); }
+            if(res) { 
+                alert("تمت إضافة المستخدم"); 
+                this.showAddUserModal = false; 
+                this.fetchData(); 
+            }
         },
 
         // ==========================================
         // 9. المحافظ والمصروفات (Wallets & Expenses)
         // ==========================================
-        updateShopCash() { this.modalUpdateCash.amount = this.shopCash; this.modalUpdateCash.show = true; },
+        updateShopCash() { 
+            this.modalUpdateCash.amount = this.shopCash; 
+            this.modalUpdateCash.show = true; 
+        },
 
         async submitUpdateCash() {
             const res = await this.apiCall('setShopCash', { amount: Number(this.modalUpdateCash.amount) });
-            if (res) { this.modalUpdateCash.show = false; this.fetchData(); }
+            if (res) { 
+                this.modalUpdateCash.show = false; 
+                this.fetchData(); 
+            }
         },
 
-        openWalletTxModal(type) { this.wTxForm = { type: type, wallet: '', amount: '', notes: '' }; this.showWalletTxModal = true; },
+        openWalletTxModal(type) { 
+            this.wTxForm = { type: type, wallet: '', amount: '', notes: '' }; 
+            this.showWalletTxModal = true; 
+        },
 
         async submitWalletTx() {
             if (!this.wTxForm.wallet || !this.wTxForm.amount) return alert("أكمل البيانات");
-            this.wTxForm.user = this.user.username; this.wTxForm.fromCash = true;
+            this.wTxForm.user = this.user.username; 
+            this.wTxForm.fromCash = true;
             const res = await this.apiCall('saveWalletTransaction', this.wTxForm);
-            if (res) { alert("تم التنفيذ"); this.showWalletTxModal = false; this.fetchData(); }
+            if (res) { 
+                alert("تم التنفيذ"); 
+                this.showWalletTxModal = false; 
+                this.fetchData(); 
+            }
         },
 
-        addNewWallet() { this.modalAddWallet = { show: true, name: '', limit: '' }; },
+        addNewWallet() { 
+            this.modalAddWallet = { show: true, name: '', limit: '' }; 
+        },
 
         async submitNewWallet() {
             if(!this.modalAddWallet.name) return alert("أدخل اسم المحفظة");
             const res = await this.apiCall('saveWalletConfig', { name: this.modalAddWallet.name, limit: this.modalAddWallet.limit || 0 });
-            if(res) { this.modalAddWallet.show = false; this.fetchData(); }
+            if(res) { 
+                this.modalAddWallet.show = false; 
+                this.fetchData(); 
+            }
         },
 
         async deleteWallet(name) {
             if(confirm(`هل أنت متأكد من حذف محفظة ${name}؟`)) {
                 const res = await this.apiCall('deleteWallet', { name });
-                if(res) { alert("تم الحذف"); this.fetchData(); }
+                if(res) { 
+                    alert("تم الحذف"); 
+                    this.fetchData(); 
+                }
             }
         },
 
@@ -461,9 +521,14 @@ document.addEventListener('alpine:init', () => {
 
         async submitExpense() {
             if (!this.expenseForm.description || !this.expenseForm.amount) return alert("البيانات ناقصة");
-            this.expenseForm.user = this.user.username; this.expenseForm.updateCashOrWallet = true;
+            this.expenseForm.user = this.user.username; 
+            this.expenseForm.updateCashOrWallet = true;
             const res = await this.apiCall('saveExpense', this.expenseForm);
-            if (res) { alert("تم التسجيل"); this.showAddExpenseModal = false; this.fetchData(); }
+            if (res) { 
+                alert("تم التسجيل"); 
+                this.showAddExpenseModal = false; 
+                this.fetchData(); 
+            }
         },
 
         executeConfirm() {
@@ -529,7 +594,9 @@ document.addEventListener('alpine:init', () => {
 
         closeScanner() {
             this.showScannerModal = false;
-            if (this.html5QrcodeScanner) this.html5QrcodeScanner.clear().catch(e => console.error("Scanner clear error", e));
+            if (this.html5QrcodeScanner) {
+                this.html5QrcodeScanner.clear().catch(e => console.error("Scanner clear error", e));
+            }
         }
     }))
 })
