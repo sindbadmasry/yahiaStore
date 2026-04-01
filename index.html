@@ -1,890 +1,1055 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#3b82f6">
-<meta name="description" content="2M ERP & POS Mobile First">
-<title>2M - ERP & POS Pro</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
-[x-cloak] { display: none !important; }
-.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-.fab-menu-enter { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); opacity: 0; transform: translateY(20px) scale(0.9); }
-.fab-menu-enter-active { opacity: 1; transform: translateY(0) scale(1); }
-.fab-menu-leave { transition: all 0.2s ease-in; opacity: 1; transform: translateY(0) scale(1); }
-.fab-menu-leave-active { opacity: 0; transform: translateY(20px) scale(0.9); }
-/* Offline Mode Banner */
-.offline-banner { animation: slideDown 0.3s ease-out forwards; }
-@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2M ERP System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* إخفاء شريط التمرير للحفاظ على شكل التطبيق */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        .modal-enter { transition: opacity 0.3s ease-out; }
+        .modal-enter-start { opacity: 0; }
+        .modal-enter-end { opacity: 1; }
+        .modal-leave { transition: opacity 0.2s ease-in; }
+        .modal-leave-start { opacity: 1; }
+        .modal-leave-end { opacity: 0; }
+    </style>
 </head>
-<body x-data="erpApp()" x-init="init()" class="bg-slate-50 text-slate-900 min-h-screen pb-28 transition-colors duration-300">
+<body x-data="erpUI()" class="text-gray-800 antialiased h-screen flex flex-col overflow-hidden">
 
-<div x-show="!isOnline" x-cloak class="offline-banner fixed top-0 left-0 right-0 bg-rose-600 text-white text-center py-1 text-[10px] font-black z-[9999] shadow-md flex justify-center items-center gap-2">
-    <i class="fa-solid fa-wifi-slash"></i> وضع عدم الاتصال (يتم حفظ العمليات محلياً)
-    <span class="bg-white text-rose-600 px-2 py-0.5 rounded-full" x-text="offlineQueue.length"></span>
-</div>
-
-<div x-show="toast.show" x-transition class="fixed top-8 left-1/2 -translate-x-1/2 z-[5000] px-6 py-3 rounded-full shadow-2xl font-black text-xs flex items-center gap-2 max-w-[90vw]" :class="toast.type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'">
-    <i class="fa-solid" :class="toast.type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-check'"></i>
-    <span x-text="toast.message"></span>
-</div>
-
-<div x-show="loading" class="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-md flex flex-col items-center justify-center text-white">
-    <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mb-4"></div>
-    <p class="font-black animate-pulse">جاري المعالجة...</p>
-</div>
-
-<div x-show="!isLoggedIn" x-cloak class="fixed inset-0 z-[2000] bg-slate-100 flex items-center justify-center p-6">
-    <div class="w-full max-w-md bg-white p-8 rounded-[2.5rem] shadow-2xl">
-        <div class="text-center mb-8">
-            <div class="w-24 h-24 bg-blue-600 rounded-3xl mx-auto flex items-center justify-center text-white text-4xl mb-4 shadow-xl"><i class="fa-solid fa-rocket"></i></div>
-            <h2 class="text-3xl font-black text-slate-800">2M ERP</h2>
-            <p class="text-slate-400 font-bold">تسجيل الدخول</p>
-        </div>
-        <div class="space-y-4">
-            <input type="text" x-model="loginForm.username" placeholder="اسم المستخدم" class="w-full p-5 bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none font-bold text-center">
-            <input type="password" x-model="loginForm.password" @keyup.enter="login()" placeholder="كلمة المرور" class="w-full p-5 bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none font-bold text-center">
-            <button @click="login()" :disabled="loading" class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-lg active:scale-95">دخول</button>
-        </div>
+    <div x-show="!isOnline || pendingSync > 0" class="bg-yellow-500 text-white text-xs font-bold px-4 py-1 flex justify-between items-center z-50">
+        <span x-text="!isOnline ? 'أنت في وضع عدم الاتصال (Offline)' : 'جاري المزامنة...' "></span>
+        <span x-show="pendingSync > 0" x-text="pendingSync + ' عمليات معلقة'"></span>
+        <i class="fas" :class="!isOnline ? 'fa-wifi-slash' : 'fa-sync fa-spin'"></i>
     </div>
-</div>
 
-<template x-if="isLoggedIn">
-<div class="max-w-4xl mx-auto relative h-full">
-    <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b px-6 py-4 flex justify-between items-center shadow-sm" :class="!isOnline ? 'mt-6' : ''">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="fa-solid fa-bolt"></i></div>
-            <div>
-                <h1 class="font-black text-lg leading-tight">2M ERP</h1>
-                <p class="text-[10px] font-bold text-blue-600" x-text="user.username + ' (' + (user.role == 'admin' ? 'مدير' : 'موظف') + ') | فرع: الرئيسي'"></p>
+    <header class="bg-blue-700 text-white shadow-md z-40 sticky top-0">
+        <div class="px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-layer-group text-xl"></i>
+                <h1 class="text-lg font-bold tracking-wide">2M ERP</h1>
             </div>
-        </div>
-        <div class="flex gap-2">
-            <button x-show="offlineQueue.length > 0" @click="syncOfflineQueue()" class="p-2 bg-amber-50 text-amber-600 rounded-xl active:scale-95"><i class="fa-solid fa-rotate"></i></button>
-            <button @click="fetchData()" class="p-2 bg-blue-50 text-blue-600 rounded-xl active:scale-95"><i class="fa-solid fa-sync" :class="loading ? 'animate-spin' : ''"></i></button>
-            <button @click="logout()" class="p-2 bg-rose-50 text-rose-600 rounded-xl active:scale-95"><i class="fa-solid fa-power-off"></i></button>
+            <div class="flex items-center gap-3">
+                <div class="text-left leading-tight">
+                    <p class="text-xs text-blue-200">نقدية المحل (Cash)</p>
+                    <p class="text-sm font-bold">24,500 ج.م</p>
+                </div>
+                <button class="bg-blue-600 p-2 rounded-full hover:bg-blue-500 transition">
+                    <i class="fas fa-bell"></i>
+                </button>
+            </div>
         </div>
     </header>
 
-    <main class="p-4 space-y-6 pb-32">
+    <main class="flex-1 overflow-y-auto pb-20 relative">
         
-        <div x-show="currentTab === 'home'" class="space-y-6 animate__animated animate__fadeIn">
-            <div class="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
-                <div class="relative z-10">
-                    <p class="text-xs font-bold opacity-80 uppercase tracking-widest mb-1">إجمالي السيولة النقدية</p>
-                    <h3 class="text-4xl font-black tabular-nums" x-text="(shopCash + getTotalWalletBalance()).toLocaleString() + ' ج'"></h3>
-                    <div class="h-px bg-white/20 my-4"></div>
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-[10px] font-bold opacity-80 mb-1"><i class="fa-solid fa-cash-register ml-1"></i>رصيد الدرج</p>
-                            <div class="flex items-center gap-2">
-                                <p class="text-xl font-black" x-text="shopCash.toLocaleString() + ' ج'"></p>
-                                <button x-show="user.role === 'admin'" @click="updateShopCash()" class="bg-white/20 w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white/30 transition-all text-[10px]"><i class="fa-solid fa-pen"></i></button>
-                            </div>
-                        </div>
-                        <div class="text-left">
-                            <p class="text-[10px] font-bold opacity-80 mb-1"><i class="fa-solid fa-wallet ml-1"></i>رصيد المحافظ</p>
-                            <p class="text-xl font-black" x-text="getTotalWalletBalance().toLocaleString() + ' ج'"></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+        <section x-show="activeTab === 'home'" x-transition.opacity class="p-4 space-y-4">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">نظرة عامة اليوم</h2>
             <div class="grid grid-cols-2 gap-4">
-                <div @click="showTodaySalesModal = true" class="bg-white p-5 rounded-[2rem] border shadow-sm cursor-pointer hover:border-blue-300">
-                    <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-3"><i class="fa-solid fa-money-bill-trend-up"></i></div>
-                    <p class="text-[10px] font-black text-slate-500 mb-1">مبيعات اليوم</p>
-                    <p class="text-xl font-black tabular-nums" x-text="(getTotalSales('عام') + getTotalSales('هاتف جديد') + getTotalSales('هاتف مستعمل')).toLocaleString() + ' ج'"></p>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                    <i class="fas fa-shopping-cart text-blue-500 text-2xl mb-2"></i>
+                    <span class="text-gray-500 text-sm">مبيعات اليوم</span>
+                    <span class="font-bold text-lg">12,400 ج</span>
                 </div>
-                <div class="bg-white p-5 rounded-[2rem] border shadow-sm" x-show="user.role === 'admin'">
-                    <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-3"><i class="fa-solid fa-coins"></i></div>
-                    <p class="text-[10px] font-black text-slate-500 mb-1">صافي الربح</p>
-                    <p class="text-xl font-black tabular-nums" x-text="(getFilteredProfits().newPhone + getFilteredProfits().usedPhone + getFilteredProfits().general + getFilteredProfits().wallet).toLocaleString() + ' ج'"></p>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                    <i class="fas fa-hand-holding-dollar text-green-500 text-2xl mb-2"></i>
+                    <span class="text-gray-500 text-sm">التحصيلات</span>
+                    <span class="font-bold text-lg">3,200 ج</span>
                 </div>
-                <div @click="currentTab = 'installments'" class="bg-white p-5 rounded-[2rem] border shadow-sm cursor-pointer hover:border-indigo-300">
-                    <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-3"><i class="fa-solid fa-hand-holding-dollar"></i></div>
-                    <p class="text-[10px] font-black text-slate-500 mb-1">إجمالي الأقساط المتبقية</p>
-                    <p class="text-xl font-black text-indigo-600 tabular-nums" x-text="getTotalRemainingInstallments().toLocaleString() + ' ج'"></p>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                    <i class="fas fa-users text-purple-500 text-2xl mb-2"></i>
+                    <span class="text-gray-500 text-sm">عملاء الأقساط</span>
+                    <span class="font-bold text-lg">45</span>
                 </div>
-                <div @click="currentTab = 'inventory'; invFilter = 'shortages'" class="bg-white p-5 rounded-[2rem] border shadow-sm cursor-pointer hover:border-rose-300">
-                    <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center mb-3"><i class="fa-solid fa-boxes-stacked"></i></div>
-                    <p class="text-[10px] font-black text-slate-500 mb-1">المنتجات الناقصة</p>
-                    <p class="text-xl font-black text-rose-600 tabular-nums" x-text="processedInventory.filter(i => Number(i.Stock) <= Number(i.Min_Stock||1)).length"></p>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                    <i class="fas fa-triangle-exclamation text-red-500 text-2xl mb-2"></i>
+                    <span class="text-gray-500 text-sm">أقساط متأخرة</span>
+                    <span class="font-bold text-lg text-red-600">8</span>
+                </div>
+            </div>
+        </section>
+
+        <section x-show="activeTab === 'pos'" x-transition.opacity class="h-full flex flex-col bg-gray-50">
+            <div class="p-3 bg-white shadow-sm z-10">
+                <div class="relative">
+                    <input type="text" placeholder="ابحث بالاسم أو الباركود..." class="w-full bg-gray-100 rounded-lg pl-10 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <i class="fas fa-search absolute right-3 top-3.5 text-gray-400"></i>
+                    <button class="absolute left-3 top-2.5 text-blue-600 bg-blue-100 p-1 rounded">
+                        <i class="fas fa-barcode"></i>
+                    </button>
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
-                <h3 class="font-black text-xs text-slate-700 mb-4"><i class="fa-solid fa-chart-line ml-2"></i>تحليل المبيعات الشهري</h3>
-                <div class="w-full h-40 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 font-bold text-xs border border-dashed border-slate-200">
-                    [ مساحة مخصصة لرسم Chart.js ]
+            <div class="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-3 pb-32">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 flex flex-col relative">
+                    <span class="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">المخزون: 12</span>
+                    <div class="h-20 bg-gray-200 rounded-md mb-2 flex items-center justify-center text-gray-400">
+                        <i class="fas fa-mobile-alt text-2xl"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-gray-700 line-clamp-1">Samsung Galaxy A54</h3>
+                    <p class="text-blue-600 font-bold mt-1">14,500 ج</p>
+                    <button class="mt-2 w-full bg-blue-50 text-blue-600 border border-blue-200 py-1.5 rounded-md text-sm font-bold hover:bg-blue-600 hover:text-white transition">
+                        <i class="fas fa-plus"></i> إضافة للسلة
+                    </button>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 flex flex-col relative">
+                    <span class="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">المخزون: 5</span>
+                    <div class="h-20 bg-gray-200 rounded-md mb-2 flex items-center justify-center text-gray-400">
+                        <i class="fas fa-headphones text-2xl"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-gray-700 line-clamp-1">AirPods Pro</h3>
+                    <p class="text-blue-600 font-bold mt-1">6,200 ج</p>
+                    <button class="mt-2 w-full bg-blue-50 text-blue-600 border border-blue-200 py-1.5 rounded-md text-sm font-bold hover:bg-blue-600 hover:text-white transition">
+                        <i class="fas fa-plus"></i> إضافة للسلة
+                    </button>
                 </div>
             </div>
-            
-            <div class="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm">
-                <h3 class="font-black text-xs text-slate-700 mb-4"><i class="fa-solid fa-clock-rotate-left ml-2"></i>أحدث العمليات</h3>
-                <div class="space-y-3">
-                    <template x-for="act in getRecentActivity()">
-                        <div class="flex items-center gap-3 text-[10px]">
-                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500"><i :class="act.icon"></i></div>
-                            <div class="flex-1">
-                                <p class="font-black text-slate-700" x-text="act.desc"></p>
-                                <p class="text-slate-400 font-bold" x-text="act.time"></p>
-                            </div>
-                            <div class="font-black" :class="act.type === 'in' ? 'text-emerald-500' : 'text-rose-500'" x-text="act.amount"></div>
+
+            <div class="absolute bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 pb-24 z-20">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-gray-600 font-bold">الإجمالي (2 عنصر)</span>
+                    <span class="text-xl font-bold text-blue-700">20,700 ج.م</span>
+                </div>
+                <button @click="openModal('checkoutModal')" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-blue-700 transition flex justify-center items-center gap-2">
+                    <i class="fas fa-cash-register"></i> إتمام الدفع
+                </button>
+            </div>
+        </section>
+
+        <section x-show="activeTab === 'crm'" x-transition.opacity class="p-4 bg-gray-50 min-h-full">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700">العملاء والمديونيات</h2>
+                <button @click="openModal('addCustomerModal')" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1">
+                    <i class="fas fa-user-plus"></i> عميل جديد
+                </button>
+            </div>
+
+            <div class="relative mb-4">
+                <input type="text" placeholder="ابحث برقم الهاتف أو الاسم..." class="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-10 py-2.5 focus:outline-none focus:border-blue-500 text-sm">
+                <i class="fas fa-search absolute right-3 top-3.5 text-gray-400"></i>
+            </div>
+
+            <div class="space-y-3">
+                <div @click="openModal('customerProfileModal')" class="bg-white p-3 rounded-xl shadow-sm border border-red-200 flex items-center justify-between active:scale-95 transition cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-red-100 text-red-600 w-10 h-10 rounded-full flex items-center justify-center font-bold">م</div>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-sm">محمود صالح نعمان</h3>
+                            <p class="text-xs text-gray-500">01012345678</p>
                         </div>
-                    </template>
+                    </div>
+                    <div class="text-left">
+                        <span class="block bg-red-100 text-red-700 text-xs px-2 py-1 rounded-md font-bold mb-1">متأخر: 1,500 ج</span>
+                        <span class="text-xs text-gray-500 font-bold">الباقي: 8,000 ج</span>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div x-show="currentTab === 'operations'" class="space-y-4 animate__animated animate__fadeIn relative pb-16">
-            <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                <h3 class="font-black text-slate-800 text-sm"><i class="fa-solid fa-cart-plus ml-2 text-blue-600"></i>نقطة البيع (POS)</h3>
-                <div class="flex gap-2 bg-slate-100 p-1 rounded-xl">
-                    <button @click="posFilter='all'" :class="posFilter==='all' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'" class="px-3 py-1.5 rounded-lg text-[10px] font-black transition-all">الكل</button>
-                    <button @click="posFilter='new'" :class="posFilter==='new' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'" class="px-3 py-1.5 rounded-lg text-[10px] font-black transition-all">جديد</button>
-                    <button @click="posFilter='used'" :class="posFilter==='used' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'" class="px-3 py-1.5 rounded-lg text-[10px] font-black transition-all">مستعمل</button>
-                </div>
-            </div>
-            
-            <div class="flex gap-2">
-                <div class="relative flex-1">
-                    <input type="text" x-model="search" placeholder="بحث بالاسم أو الباركود..." class="w-full p-4 pl-12 bg-white border border-slate-200 rounded-2xl outline-none font-bold text-sm focus:border-blue-500 transition-colors shadow-sm">
-                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                </div>
-                <button @click="openScanner('pos')" class="w-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-md active:scale-95"><i class="fa-solid fa-qrcode text-xl"></i></button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 pb-4">
-                <template x-for="item in filteredInventoryPOS">
-                    <div @click="addToCart(item)" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm active:scale-95 transition-all relative overflow-hidden cursor-pointer hover:border-blue-400">
-                        <template x-if="item.Category && item.Category.includes('هاتف')">
-                            <span class="absolute top-0 right-0 bg-blue-600 text-white text-[8px] px-2 py-1 rounded-bl-xl font-black">هاتف</span>
-                        </template>
-                        <h4 class="font-black text-xs truncate leading-relaxed" x-text="item.Product_Name"></h4>
-                        <div class="mt-3 flex justify-between items-center">
-                            <span class="text-blue-700 font-black text-sm tabular-nums" x-text="item.Selling_Price + ' ج'"></span>
-                            <span class="text-[9px] font-bold px-2 py-1 rounded-lg" :class="item.Stock > 0 ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-600'" x-text="item.Stock > 0 ? 'متاح: ' + item.Stock : 'نفد'"></span>
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-95 transition cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-blue-100 text-blue-600 w-10 h-10 rounded-full flex items-center justify-center font-bold">د</div>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-sm">د. آية خالد</h3>
+                            <p class="text-xs text-gray-500">01198765432</p>
                         </div>
                     </div>
-                </template>
-            </div>
-
-            <div x-show="cart.length > 0" x-transition class="fixed bottom-[88px] left-4 right-4 bg-slate-800 text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center z-40 border border-slate-700">
-                <div>
-                    <p class="text-[10px] text-slate-300 font-bold">إجمالي السلة (<span x-text="cart.length"></span> منتجات)</p>
-                    <p class="text-lg font-black tabular-nums text-emerald-400" x-text="netCartTotal().toLocaleString() + ' ج'"></p>
-                </div>
-                <button @click="showCart = true" class="bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-xl font-black text-sm transition-colors shadow-lg shadow-blue-900/50">الدفع الآن</button>
-            </div>
-        </div>
-
-        <div x-show="currentTab === 'inventory'" class="space-y-4 animate__animated animate__fadeIn">
-             <div class="flex gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
-                <button @click="invTab = 'products'" :class="invTab === 'products' ? 'bg-blue-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-xl text-xs font-black transition-all">المنتجات</button>
-                <button @click="invTab = 'purchases'" :class="invTab === 'purchases' ? 'bg-blue-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-xl text-xs font-black transition-all">أوامر الشراء</button>
-                <button @click="invTab = 'suppliers'" :class="invTab === 'suppliers' ? 'bg-blue-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-xl text-xs font-black transition-all">الموردين</button>
-            </div>
-
-            <div x-show="invTab === 'products'" class="space-y-3">
-                <div class="flex gap-2">
-                    <button @click="openProductModal('صنف عام')" class="flex-1 bg-emerald-50 text-emerald-700 p-3 rounded-xl font-black text-xs border border-emerald-100"><i class="fa-solid fa-plus ml-1"></i> إضافة منتج</button>
-                    <button @click="showStockTransferModal = true" class="flex-1 bg-purple-50 text-purple-700 p-3 rounded-xl font-black text-xs border border-purple-100"><i class="fa-solid fa-truck-moving ml-1"></i> تحويل مخزني</button>
-                </div>
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="p-3 border-b flex justify-between items-center bg-slate-50">
-                        <input type="text" x-model="invSearch" placeholder="ابحث باسم المنتج..." class="w-full p-2 bg-white border rounded-lg text-xs font-bold outline-none">
-                    </div>
-                    <table class="w-full text-[10px] text-right">
-                        <thead class="bg-slate-50 text-slate-500 font-black border-b">
-                            <tr><th class="p-3">المنتج</th><th class="p-3 text-center">السعر</th><th class="p-3 text-center">الكمية</th></tr>
-                        </thead>
-                        <tbody class="divide-y">
-                            <template x-for="item in processedInventory">
-                                <tr @click="openInventoryProduct(item)" class="cursor-pointer hover:bg-slate-50">
-                                    <td class="p-3 font-black"><div x-text="item.Product_Name"></div></td>
-                                    <td class="p-3 text-center font-black text-blue-600 tabular-nums" x-text="item.Selling_Price + ' ج'"></td>
-                                    <td class="p-3 text-center font-black tabular-nums" :class="item.Stock <= (item.Min_Stock||1) ? 'text-red-600 bg-red-50' : ''" x-text="item.Stock"></td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div x-show="invTab === 'purchases'" class="space-y-3">
-                <button @click="showPurchaseOrderModal = true" class="w-full bg-slate-800 text-white p-3 rounded-xl font-black text-xs"><i class="fa-solid fa-file-invoice ml-1"></i> إنشاء أمر شراء جديد</button>
-                <div class="bg-white p-6 rounded-2xl text-center text-slate-400 font-bold border border-dashed border-slate-200 text-xs">
-                    قائمة أوامر الشراء تظهر هنا
-                </div>
-            </div>
-        </div>
-
-        <div x-show="currentTab === 'crm'" class="space-y-4 animate__animated animate__fadeIn">
-             <div class="flex gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
-                <button @click="crmTab = 'customers'" :class="crmTab === 'customers' ? 'bg-indigo-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-xl text-xs font-black transition-all">العملاء</button>
-                <button @click="crmTab = 'installments'" :class="crmTab === 'installments' ? 'bg-indigo-600 text-white' : 'text-slate-500'" class="flex-1 py-2 rounded-xl text-xs font-black transition-all">إدارة الأقساط</button>
-            </div>
-
-            <div x-show="crmTab === 'installments'" class="space-y-4">
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-white p-4 rounded-2xl border shadow-sm">
-                        <p class="text-[10px] text-slate-500 font-black">أقساط متأخرة</p>
-                        <p class="text-lg font-black text-rose-600" x-text="getLateInstallmentsCount() + ' قسط'"></p>
-                    </div>
-                    <div class="bg-white p-4 rounded-2xl border shadow-sm">
-                        <p class="text-[10px] text-slate-500 font-black">المحصل اليوم</p>
-                        <p class="text-lg font-black text-emerald-600 tabular-nums">0 ج</p>
+                    <div class="text-left">
+                        <span class="block bg-green-100 text-green-700 text-xs px-2 py-1 rounded-md font-bold mb-1">منتظم</span>
+                        <span class="text-xs text-gray-500 font-bold">الباقي: 3,200 ج</span>
                     </div>
                 </div>
-                
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="p-3 bg-slate-50 border-b font-black text-xs text-slate-700"><i class="fa-solid fa-calendar-days ml-1"></i> جدول استحقاق الأقساط</div>
-                    <template x-for="inst in activeInstallmentContracts">
-                        <div @click="openInstallmentDetails(inst)" class="p-3 border-b border-slate-100 flex justify-between items-center cursor-pointer hover:bg-slate-50">
+            </div>
+        </section>
+
+        <section x-show="activeTab === 'finance'" x-transition.opacity class="p-4 bg-gray-50 min-h-full">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">النظام المالي والمحافظ</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-sm font-bold text-gray-500 mb-2">المحافظ المتاحة</h3>
+                <div class="flex gap-3 overflow-x-auto pb-2 snap-x">
+                    <div class="min-w-[200px] bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 text-white shadow-md snap-center">
+                        <div class="flex justify-between items-start mb-2">
+                            <i class="fas fa-wallet text-2xl opacity-80"></i>
+                            <span class="text-xs bg-white/20 px-2 py-0.5 rounded">Vodafone Cash</span>
+                        </div>
+                        <h4 class="text-2xl font-bold mt-2">15,300 <span class="text-sm font-normal">ج.م</span></h4>
+                    </div>
+                    <div class="min-w-[200px] bg-gradient-to-r from-green-500 to-teal-500 rounded-xl p-4 text-white shadow-md snap-center">
+                        <div class="flex justify-between items-start mb-2">
+                            <i class="fas fa-building-columns text-2xl opacity-80"></i>
+                            <span class="text-xs bg-white/20 px-2 py-0.5 rounded">InstaPay / Bank</span>
+                        </div>
+                        <h4 class="text-2xl font-bold mt-2">42,000 <span class="text-sm font-normal">ج.م</span></h4>
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <button @click="openModal('walletTransferModal')" class="flex-1 bg-white border border-gray-200 text-gray-700 py-2 rounded-lg text-sm font-bold shadow-sm flex justify-center items-center gap-2">
+                        <i class="fas fa-exchange-alt text-blue-500"></i> تحويل رصيد
+                    </button>
+                    <button class="flex-1 bg-white border border-gray-200 text-gray-700 py-2 rounded-lg text-sm font-bold shadow-sm flex justify-center items-center gap-2">
+                        <i class="fas fa-arrow-down text-green-500"></i> إيداع
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-bold text-gray-500">سجل المصروفات</h3>
+                    <button @click="openModal('expenseModal')" class="text-blue-600 text-sm font-bold flex items-center gap-1">
+                        <i class="fas fa-plus-circle"></i> إضافة مصروف
+                    </button>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+                    <div class="p-3 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-orange-100 text-orange-500 p-2 rounded-lg"><i class="fas fa-bolt"></i></div>
                             <div>
-                                <p class="font-black text-xs text-slate-800" x-text="inst.Customer"></p>
-                                <p class="text-[9px] text-slate-400 font-bold" x-text="'باقي: ' + (inst.Total - inst.Paid).toLocaleString() + ' ج'"></p>
+                                <p class="text-sm font-bold text-gray-800">فاتورة كهرباء</p>
+                                <p class="text-xs text-gray-400">اليوم، 10:30 صباحاً (من الخزنة)</p>
                             </div>
-                            <span class="text-[9px] px-2 py-1 rounded bg-amber-50 text-amber-600 font-black">عرض الجدول</span>
                         </div>
-                    </template>
+                        <span class="text-red-500 font-bold text-sm">- 450 ج</span>
+                    </div>
+                    <div class="p-3 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-blue-100 text-blue-500 p-2 rounded-lg"><i class="fas fa-truck"></i></div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">مصاريف شحن بضاعة</p>
+                                <p class="text-xs text-gray-400">أمس (من Vodafone Cash)</p>
+                            </div>
+                        </div>
+                        <span class="text-red-500 font-bold text-sm">- 120 ج</span>
+                    </div>
                 </div>
             </div>
-            
-            <div x-show="crmTab === 'customers'" class="space-y-3">
-                 <button @click="showAddCustomerModal = true" class="w-full bg-indigo-50 text-indigo-700 p-3 rounded-xl font-black text-xs border border-indigo-100"><i class="fa-solid fa-user-plus ml-1"></i> عميل جديد</button>
-                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
-                     <template x-for="cust in getCRMList()">
-                        <div @click="openCustomerProfile(cust)" class="p-4 border-b last:border-0 flex justify-between items-center cursor-pointer hover:bg-slate-50">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500"><i class="fa-solid fa-user"></i></div>
-                                <div>
-                                    <p class="font-black text-sm text-slate-800" x-text="cust.name"></p>
-                                    <p class="text-[10px] text-rose-500 font-bold" x-text="'مديونية: ' + cust.debt.toLocaleString() + ' ج'"></p>
-                                </div>
-                            </div>
-                            <i class="fa-solid fa-chevron-left text-slate-300"></i>
-                        </div>
-                     </template>
-                 </div>
-            </div>
-        </div>
+        </section>
 
-        <div x-show="currentTab === 'management'" class="space-y-4 animate__animated animate__fadeIn">
-            <button @click="showAccountingModal = true" class="w-full bg-teal-50 text-teal-700 p-4 rounded-[2rem] font-black text-sm flex items-center justify-between border border-teal-100 shadow-sm">
-                <div class="flex items-center gap-3"><div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm"><i class="fa-solid fa-file-invoice"></i></div> المحاسبة والقيود اليومية</div>
-                <i class="fa-solid fa-chevron-left"></i>
-            </button>
-            <button @click="activeSection = activeSection === 3 ? null : 3" class="w-full bg-emerald-50 text-emerald-700 p-4 rounded-[2rem] font-black text-sm flex items-center justify-between border border-emerald-100 shadow-sm mt-3">
-                <div class="flex items-center gap-3"><div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm"><i class="fa-solid fa-wallet"></i></div> إدارة المحافظ الإلكترونية</div>
-                <i class="fa-solid fa-chevron-down"></i>
-            </button>
-            <div class="p-4 bg-slate-100 rounded-2xl text-center text-[10px] font-bold text-slate-500">
-                باقي خيارات الإدارة الأصلية محفوظة (المخزون، المستخدمين، التقارير)
-            </div>
-        </div>
     </main>
 
-    <nav class="fixed bottom-0 w-full max-w-4xl mx-auto bg-white border-t border-slate-100 z-40 py-2 flex justify-around px-2 shadow-lg pb-safe-area">
-        <template x-for="t in tabs">
-            <button @click="currentTab = t.id; fabOpen = false;" :class="currentTab === t.id ? 'text-blue-600' : 'text-slate-400'" class="flex flex-col items-center flex-1 transition-all pt-2 pb-1 relative">
-                <div x-show="currentTab === t.id" class="absolute top-0 w-8 h-1 bg-blue-600 rounded-b-full transition-all"></div>
-                <i :class="t.icon" class="text-xl mb-1" :class="currentTab === t.id ? 'transform -translate-y-1' : ''"></i>
-                <span class="text-[9px] font-black" x-text="t.name"></span>
-            </button>
-        </template>
+    <nav class="bg-white border-t border-gray-200 fixed bottom-0 w-full z-30 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] pb-safe">
+        <ul class="flex justify-around items-center p-2">
+            <li>
+                <button @click="activeTab = 'home'" :class="activeTab === 'home' ? 'text-blue-600' : 'text-gray-400'" class="flex flex-col items-center p-2 w-16 transition">
+                    <i class="fas fa-chart-pie text-xl mb-1"></i>
+                    <span class="text-[10px] font-bold">الرئيسية</span>
+                </button>
+            </li>
+            <li>
+                <button @click="activeTab = 'pos'" :class="activeTab === 'pos' ? 'text-blue-600' : 'text-gray-400'" class="flex flex-col items-center p-2 w-16 transition">
+                    <i class="fas fa-store text-xl mb-1"></i>
+                    <span class="text-[10px] font-bold">المبيعات</span>
+                </button>
+            </li>
+            <li>
+                <button @click="activeTab = 'crm'" :class="activeTab === 'crm' ? 'text-blue-600' : 'text-gray-400'" class="flex flex-col items-center p-2 w-16 transition">
+                    <i class="fas fa-users text-xl mb-1"></i>
+                    <span class="text-[10px] font-bold">العملاء</span>
+                </button>
+            </li>
+            <li>
+                <button @click="activeTab = 'finance'" :class="activeTab === 'finance' ? 'text-blue-600' : 'text-gray-400'" class="flex flex-col items-center p-2 w-16 transition">
+                    <i class="fas fa-coins text-xl mb-1"></i>
+                    <span class="text-[10px] font-bold">المالية</span>
+                </button>
+            </li>
+            <li>
+                <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'text-blue-600' : 'text-gray-400'" class="flex flex-col items-center p-2 w-16 transition">
+                    <i class="fas fa-cog text-xl mb-1"></i>
+                    <span class="text-[10px] font-bold">الإعدادات</span>
+                </button>
+            </li>
+        </ul>
     </nav>
-</div>
-</template>
 
-<div x-show="showCart" x-cloak class="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-sm flex items-end justify-center">
-    <div class="w-full max-w-lg bg-white rounded-t-[2.5rem] p-6 space-y-5 h-[90vh] overflow-y-auto custom-scrollbar relative flex flex-col">
-        <div class="flex justify-between items-center flex-shrink-0">
-            <h3 class="text-xl font-black text-slate-800">مراجعة الفاتورة والدفع</h3>
-            <button @click="showCart = false" class="text-slate-400 bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-times"></i></button>
-        </div>
-        
-        <div class="space-y-3 flex-1 overflow-y-auto custom-scrollbar pb-4">
-             <template x-for="(ci, idx) in cart">
-                 <div class="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-200">
-                     <div class="flex-1">
-                         <p class="font-black text-xs text-slate-800" x-text="ci.name"></p>
-                         <div class="text-[10px] text-slate-500 font-bold mt-1">السعر: <span x-text="ci.price"></span> | الكمية: <span x-text="ci.qty"></span></div>
-                     </div>
-                     <button @click="cart.splice(idx, 1)" class="text-rose-500"><i class="fa-solid fa-trash-can"></i></button>
-                 </div>
-             </template>
-        </div>
-        
-        <div class="border-t border-slate-200 pt-5 space-y-4 flex-shrink-0 bg-white">
-            <div class="flex items-center gap-2">
-                <label class="text-[10px] font-black text-slate-500">خصم (ج):</label>
-                <input type="number" x-model.number="checkout.discount" class="w-24 p-2 bg-slate-50 border rounded-lg font-bold text-xs outline-none text-rose-600">
-            </div>
-
-            <div class="flex justify-between items-end bg-blue-50 p-4 rounded-2xl border border-blue-100 text-blue-800">
-                <span class="text-xs font-black">الصافي للدفع</span>
-                <span class="text-2xl font-black tabular-nums" x-text="netCartTotal().toLocaleString() + ' ج'"></span>
-            </div>
-
-            <input type="text" x-model="checkout.customer" placeholder="اسم العميل *" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500">
+    <div x-show="modals.checkoutModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50 transition-opacity" style="display: none;">
+        <div @click.away="closeModal('checkoutModal')" class="bg-white w-full sm:max-w-md sm:rounded-xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+             x-transition:enter="transition ease-out duration-300 transform"
+             x-transition:enter-start="translate-y-full opacity-0"
+             x-transition:enter-end="translate-y-0 opacity-100"
+             x-transition:leave="transition ease-in duration-200 transform"
+             x-transition:leave-start="translate-y-0 opacity-100"
+             x-transition:leave-end="translate-y-full opacity-0">
             
-            <div>
-                <label class="text-[10px] font-black text-slate-500 mb-1 block">طريقة الدفع</label>
-                <div class="grid grid-cols-4 gap-2 mb-3">
-                    <button @click="checkout.type = 'Cash'; checkout.paid = netCartTotal()" :class="checkout.type === 'Cash' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'" class="py-3 rounded-xl text-[10px] font-black transition-colors">كاش</button>
-                    <button @click="checkout.type = 'Wallet'; checkout.paid = netCartTotal()" :class="checkout.type === 'Wallet' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'" class="py-3 rounded-xl text-[10px] font-black transition-colors">محفظة</button>
-                    <button @click="checkout.type = 'Credit'" :class="checkout.type === 'Credit' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'" class="py-3 rounded-xl text-[10px] font-black transition-colors">آجل</button>
-                    <button @click="checkout.type = 'Installment'" :class="checkout.type === 'Installment' ? 'bg-indigo-500 text-white shadow-md' : 'bg-slate-100 text-slate-600'" class="py-3 rounded-xl text-[10px] font-black transition-colors border border-transparent"><i class="fa-solid fa-fire text-orange-400" x-show="checkout.type === 'Installment'"></i> تقسيط</button>
+            <div class="px-4 py-3 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-lg text-gray-800">إتمام الدفع</h3>
+                <button @click="closeModal('checkoutModal')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto flex-1">
+                <h4 class="text-sm font-bold text-gray-500 mb-2">طريقة الدفع</h4>
+                <div class="grid grid-cols-4 gap-2 mb-4">
+                    <button @click="paymentMethod = 'cash'" :class="paymentMethod === 'cash' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200'" class="border rounded-lg py-2 text-xs font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-money-bill-wave text-lg"></i> كاش
+                    </button>
+                    <button @click="paymentMethod = 'wallet'" :class="paymentMethod === 'wallet' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200'" class="border rounded-lg py-2 text-xs font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-mobile-screen text-lg"></i> محفظة
+                    </button>
+                    <button @click="paymentMethod = 'credit'" :class="paymentMethod === 'credit' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200'" class="border rounded-lg py-2 text-xs font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-book text-lg"></i> آجل
+                    </button>
+                    <button @click="paymentMethod = 'installment'" :class="paymentMethod === 'installment' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200'" class="border rounded-lg py-2 text-xs font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-calendar-alt text-lg"></i> تقسيط
+                    </button>
                 </div>
-            </div>
 
-            <div x-show="checkout.type === 'Installment'" x-collapse class="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl space-y-3">
-                <h4 class="font-black text-xs text-indigo-800 border-b border-indigo-200 pb-2"><i class="fa-solid fa-handshake ml-1"></i> إعداد خطة التقسيط</h4>
-                
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-[9px] font-black text-slate-500 block">المقدم المدفوع</label>
-                        <input type="number" x-model.number="checkout.paid" class="w-full p-2 bg-white border rounded-lg font-bold text-sm outline-none text-indigo-600">
+                <div x-show="paymentMethod === 'installment'" class="bg-green-50 p-3 rounded-lg border border-green-200 mb-4 space-y-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fas fa-calculator text-green-600"></i>
+                        <span class="font-bold text-green-800 text-sm">حاسبة الأقساط (Installment Engine)</span>
                     </div>
                     <div>
-                        <label class="text-[9px] font-black text-slate-500 block">طريقة دفع المقدم</label>
-                        <select x-model="checkout.downpaymentType" class="w-full p-2 bg-white border rounded-lg font-bold text-sm outline-none">
-                            <option value="Cash">كاش المحل</option>
-                            <option value="Wallet">محفظة إلكترونية</option>
-                        </select>
+                        <label class="text-xs font-bold text-gray-600">ابحث عن العميل المشتري</label>
+                        <input type="text" placeholder="رقم هاتف أو اسم العميل..." class="w-full mt-1 border border-gray-300 rounded p-2 text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-gray-600">المقدم المدفوع (ج)</label>
+                            <input type="number" x-model="installmentDownPayment" class="w-full mt-1 border border-gray-300 rounded p-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600">مدة التقسيط (أشهر)</label>
+                            <select x-model="installmentMonths" class="w-full mt-1 border border-gray-300 rounded p-2 text-sm bg-white">
+                                <option value="6">6 أشهر</option>
+                                <option value="12">12 شهر</option>
+                                <option value="18">18 شهر</option>
+                                <option value="24">24 شهر</option>
+                            </select>
+                        </div>
                     </div>
                     <div>
-                        <label class="text-[9px] font-black text-slate-500 block">نسبة الفائدة % (اختياري)</label>
-                        <input type="number" x-model.number="checkout.interestRate" class="w-full p-2 bg-white border rounded-lg font-bold text-sm outline-none text-rose-600">
+                        <label class="text-xs font-bold text-gray-600">نسبة الفائدة الشهرية (%)</label>
+                        <input type="number" x-model="installmentInterest" value="3" class="w-full mt-1 border border-gray-300 rounded p-2 text-sm">
                     </div>
-                    <div>
-                        <label class="text-[9px] font-black text-slate-500 block">دورية السداد</label>
-                        <select x-model="checkout.durationCycle" class="w-full p-2 bg-white border rounded-lg font-bold text-sm outline-none">
-                            <option value="monthly">شهري</option>
-                            <option value="weekly">أسبوعي</option>
-                        </select>
-                    </div>
-                    <div class="col-span-2">
-                        <label class="text-[9px] font-black text-slate-500 block">عدد الأقساط (الأشهر/الأسابيع)</label>
-                        <input type="number" min="1" x-model.number="checkout.months" class="w-full p-2 bg-white border rounded-lg font-bold text-sm outline-none text-center">
+                    
+                    <div class="bg-white p-2 rounded border border-green-100 flex justify-between items-center mt-2">
+                        <span class="text-xs font-bold text-gray-600">القسط الشهري المتوقع:</span>
+                        <span class="font-bold text-green-700 text-lg" x-text="calculateInstallment() + ' ج'"></span>
                     </div>
                 </div>
-                
-                <div class="bg-white p-3 rounded-xl border border-indigo-100 text-center">
-                    <p class="text-[10px] text-slate-500 font-bold mb-1">قيمة القسط الواحد تقريباً</p>
-                    <p class="text-lg font-black text-indigo-600 tabular-nums" x-text="calculateInstallmentValue() + ' ج'"></p>
+
+                <div x-show="paymentMethod === 'cash' || paymentMethod === 'wallet'" class="mb-4">
+                    <label class="text-xs font-bold text-gray-600 mb-1 block">المبلغ المدفوع من العميل</label>
+                    <input type="number" placeholder="أدخل المبلغ..." class="w-full border border-gray-300 rounded-lg p-3 text-lg font-bold text-center">
                 </div>
-            </div>
 
-            <button @click="confirmSaleAdvanced()" :disabled="loading || cart.length === 0 || (checkout.type === 'Installment' && !checkout.customer)" class="w-full py-4 bg-blue-600 text-white rounded-xl font-black text-lg shadow-lg disabled:opacity-50 active:scale-95 transition-transform flex justify-center items-center gap-2">
-                <span x-text="loading ? 'جاري التنفيذ...' : 'إتمام الفاتورة والتأكيد'"></span>
-            </button>
-        </div>
-    </div>
-</div>
-
-<div x-show="showCustomerProfileModal" x-cloak class="fixed inset-0 z-[2000] bg-slate-50 flex flex-col transition-transform">
-    <div class="bg-indigo-600 px-4 py-6 pb-10 flex justify-between items-start shadow-sm rounded-b-[2rem]">
-        <div class="text-white">
-            <h3 class="font-black text-2xl" x-text="selectedCustomer?.name"></h3>
-            <p class="text-xs font-bold opacity-80 mt-1"><i class="fa-solid fa-phone ml-1"></i> مسجل بالنظام</p>
-        </div>
-        <button @click="showCustomerProfileModal = false" class="text-white bg-white/20 w-8 h-8 rounded-full flex items-center justify-center active:scale-95"><i class="fa-solid fa-times"></i></button>
-    </div>
-    
-    <div class="flex-1 overflow-y-auto px-4 -mt-6 space-y-4 pb-10">
-        <div class="bg-white p-4 rounded-[2rem] shadow-md border border-slate-100 grid grid-cols-2 gap-4 text-center">
-            <div>
-                <p class="text-[10px] font-black text-slate-500">إجمالي المشتريات</p>
-                <p class="text-lg font-black text-blue-600 tabular-nums" x-text="getCustomerStats().totalPurchases + ' ج'"></p>
             </div>
-            <div>
-                <p class="text-[10px] font-black text-slate-500">المديونية الحالية</p>
-                <p class="text-lg font-black text-rose-600 tabular-nums" x-text="getCustomerStats().debt + ' ج'"></p>
+            
+            <div class="p-4 bg-white border-t border-gray-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-gray-500">الإجمالي المطلوب:</span>
+                    <span class="text-2xl font-bold text-blue-700">20,700 ج</span>
+                </div>
+                <button @click="confirmPayment" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-blue-700 transition">
+                    تأكيد وحفظ العملية
+                </button>
             </div>
         </div>
+    </div>
 
-        <h4 class="font-black text-sm text-slate-700 mt-4"><i class="fa-solid fa-clock-rotate-left ml-1"></i> سجل المعاملات والأقساط</h4>
-        <div class="space-y-3">
-             <template x-for="txn in getCustomerHistory()">
-                 <div class="bg-white p-4 rounded-2xl border shadow-sm">
-                     <div class="flex justify-between items-center mb-2">
-                         <span class="text-[10px] font-bold text-slate-500" x-text="txn.Date"></span>
-                         <span class="text-[9px] font-black px-2 py-1 rounded" :class="txn.Payment_Type === 'Installment' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-600'" x-text="txn.Payment_Type"></span>
-                     </div>
-                     <div class="flex justify-between items-center font-black">
-                         <span class="text-xs text-slate-800">فاتورة مبيعات</span>
-                         <span class="text-sm tabular-nums text-blue-600" x-text="txn.Total + ' ج'"></span>
-                     </div>
-                 </div>
-             </template>
-        </div>
-    </div>
-</div>
+    <div x-show="modals.customerProfileModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50 transition-opacity" style="display: none;">
+        <div @click.away="closeModal('customerProfileModal')" class="bg-white w-full sm:max-w-md sm:rounded-xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col h-full sm:h-auto"
+             x-transition:enter="transition ease-out duration-300 transform"
+             x-transition:enter-start="translate-y-full opacity-0"
+             x-transition:enter-end="translate-y-0 opacity-100"
+             x-transition:leave="transition ease-in duration-200 transform"
+             x-transition:leave-start="translate-y-0 opacity-100"
+             x-transition:leave-end="translate-y-full opacity-0">
+            
+            <div class="px-4 py-4 border-b bg-gray-50 flex justify-between items-start">
+                <div class="flex items-center gap-3">
+                    <div class="bg-red-100 text-red-600 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">م</div>
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800">محمود صالح نعمان</h3>
+                        <p class="text-sm text-gray-500"><i class="fas fa-phone-alt text-xs"></i> 01012345678</p>
+                    </div>
+                </div>
+                <button @click="closeModal('customerProfileModal')" class="text-gray-400 hover:text-red-500 bg-white rounded-full p-1"><i class="fas fa-times text-xl"></i></button>
+            </div>
 
-<div x-show="showInstallmentDetailsModal" x-cloak class="fixed inset-0 z-[2000] bg-slate-50 flex flex-col transition-transform">
-    <div class="bg-white px-4 py-4 flex justify-between items-center shadow-sm border-b">
-        <h3 class="font-black text-lg text-slate-800"><i class="fa-solid fa-list-check text-indigo-600 ml-2"></i> جدول سداد الأقساط</h3>
-        <button @click="showInstallmentDetailsModal = false" class="text-slate-500 bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-times"></i></button>
-    </div>
-    <div class="p-4 bg-indigo-50 border-b border-indigo-100">
-        <p class="font-black text-indigo-800" x-text="selectedInstallment?.Customer"></p>
-        <p class="text-xs font-bold text-indigo-600 mt-1" x-text="'المتبقي: ' + (selectedInstallment?.Total - selectedInstallment?.Paid) + ' ج'"></p>
-    </div>
-    <div class="flex-1 overflow-y-auto p-4 space-y-3">
-        <template x-for="(sched, index) in generateInstallmentSchedule(selectedInstallment)">
-            <div class="bg-white p-4 rounded-2xl border shadow-sm flex justify-between items-center" :class="sched.status === 'late' ? 'border-rose-300 bg-rose-50' : ''">
+            <div class="p-4 overflow-y-auto flex-1 bg-gray-50 space-y-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 grid grid-cols-2 gap-4">
+                    <div>
+                        <span class="block text-xs text-gray-500 font-bold mb-1">إجمالي المديونية</span>
+                        <span class="text-lg font-bold text-gray-800">8,000 ج</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs text-red-500 font-bold mb-1"><i class="fas fa-exclamation-circle"></i> متأخرات</span>
+                        <span class="text-lg font-bold text-red-600">1,500 ج</span>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <h4 class="text-sm font-bold text-blue-800 mb-2">تسجيل دفعة جديدة</h4>
+                    <div class="flex gap-2">
+                        <input type="number" placeholder="المبلغ..." class="flex-1 border border-blue-200 rounded p-2 text-sm">
+                        <button class="bg-blue-600 text-white px-4 rounded text-sm font-bold hover:bg-blue-700">تحصيل</button>
+                    </div>
+                </div>
+
                 <div>
-                    <p class="font-black text-xs text-slate-800" x-text="'القسط #' + (index + 1)"></p>
-                    <p class="text-[10px] font-bold text-slate-500 mt-1" x-text="'الاستحقاق: ' + sched.date"></p>
-                    <span x-show="sched.status === 'late'" class="text-[8px] bg-rose-600 text-white px-2 py-0.5 rounded-full font-black mt-1 inline-block">متأخر</span>
-                </div>
-                <div class="text-left">
-                    <p class="font-black text-sm tabular-nums text-slate-800 mb-2" x-text="sched.amount + ' ج'"></p>
-                    <button @click="paySingleInstallment(selectedInstallment, sched.amount)" class="bg-indigo-600 text-white text-[9px] font-black px-4 py-2 rounded-lg active:scale-95 shadow-md">تحصيل الآن</button>
+                    <h4 class="text-sm font-bold text-gray-600 mb-2">جدول الأقساط المتبقية</h4>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+                        <div class="p-3 flex justify-between items-center bg-red-50">
+                            <div>
+                                <p class="text-sm font-bold text-red-700">قسط شهر مارس (متأخر)</p>
+                                <p class="text-xs text-red-500">مستحق في: 01/03/2026</p>
+                            </div>
+                            <span class="font-bold text-red-700">1,500 ج</span>
+                        </div>
+                        <div class="p-3 flex justify-between items-center">
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">قسط شهر أبريل</p>
+                                <p class="text-xs text-gray-500">مستحق في: 01/04/2026</p>
+                            </div>
+                            <span class="font-bold text-gray-700">1,500 ج</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </template>
+        </div>
     </div>
-</div>
-        <script>
-// الرابط الأصلي لقاعدة البيانات (Google Apps Script) - لا تقم بتغييره
-const API_URL = "https://script.google.com/macros/s/AKfycbwUZC4_3232nHjYrFZWY1Y8bEqBghvRkielumR9RTpj7AhmyF6aBFQME5edAKLAW19Y/exec";
 
-function erpApp() {
-    return {
-        // ==========================================
-        // 1. STATE & VARIABLES (Original + Extended)
-        // ==========================================
-        loading: false, 
-        isLoggedIn: false, 
-        user: { username: '', role: '' },
-        currentTab: 'home', 
-        fabOpen: false,
-        toast: { show: false, message: '', type: 'success' },
-        loginForm: { username: '', password: '' },
-        search: '', 
-        invSearch: '', 
-        posFilter: 'all', 
-        invFilter: 'all',
-        
-        // Data Store
-        data: { 
-            Inventory: [], 
-            Maintenance: [], 
-            Wallets: [], 
-            Sales: [], 
-            Settings: [], 
-            Users: [], 
-            Expenses: [], 
-            Customers: [] 
-        },
-        
-        // Cart & POS
-        cart: [], 
-        showCart: false,
-        checkout: { 
-            customer: '', 
-            type: 'Cash', 
-            paid: '', 
-            walletName: '', 
-            discount: 0, 
-            updateCashOrWallet: true, 
-            months: 1, 
-            downpaymentType: 'Cash', 
-            interestRate: 0, 
-            durationCycle: 'monthly' 
-        },
-        
-        shopCash: 0,
-        activeSection: null, // For accordions
+    <div x-show="modals.expenseModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity p-4" style="display: none;">
+        <div @click.away="closeModal('expenseModal')" class="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                <h3 class="font-bold text-gray-800">تسجيل مصروف جديد</h3>
+                <button @click="closeModal('expenseModal')" class="text-gray-400"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 space-y-3">
+                <div>
+                    <label class="text-xs font-bold text-gray-600 block mb-1">المبلغ</label>
+                    <input type="number" class="w-full border border-gray-300 rounded p-2" placeholder="0.00">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600 block mb-1">البيان / السبب</label>
+                    <input type="text" class="w-full border border-gray-300 rounded p-2" placeholder="مثال: ضيافة، كهرباء...">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600 block mb-1">الخصم من</label>
+                    <select class="w-full border border-gray-300 rounded p-2 bg-white text-sm">
+                        <option value="cash">نقدية المحل (الخزنة)</option>
+                        <option value="wallet_vodafone">Vodafone Cash</option>
+                    </select>
+                </div>
+            </div>
+            <div class="p-4 border-t bg-gray-50">
+                <button @click="closeModal('expenseModal')" class="w-full bg-red-500 text-white font-bold py-2 rounded shadow hover:bg-red-600">حفظ وخصم الرصيد</button>
+            </div>
+        </div>
+    </div>
 
-        // --- NEW ERP PRO STATE ---
-        isOnline: navigator.onLine,
-        offlineQueue: [],
-        invTab: 'products', 
-        crmTab: 'customers',
-        
-        // Modals
-        showAccountingModal: false, 
-        showPurchaseOrderModal: false, 
-        showStockTransferModal: false,
-        showCustomerProfileModal: false, 
-        showInstallmentDetailsModal: false,
-        
-        // Selections
-        selectedCustomer: null, 
-        selectedInstallment: null,
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('erpUI', () => ({
+                activeTab: 'home', // 'home', 'pos', 'crm', 'finance', 'settings'
+                isOnline: navigator.onLine,
+                pendingSync: 0,
+                paymentMethod: 'cash',
+                
+                // Installment logic variables
+                installmentDownPayment: 5000,
+                installmentMonths: 12,
+                installmentInterest: 3,
+                totalAmount: 20700,
 
-        // Navigation Tabs
-        tabs: [
-            { id: 'home', name: 'الرئيسية', icon: 'fa-solid fa-house' },
-            { id: 'operations', name: 'نقطة بيع', icon: 'fa-solid fa-cash-register' },
-            { id: 'inventory', name: 'المخزون', icon: 'fa-solid fa-boxes-stacked' },
-            { id: 'crm', name: 'العملاء والأقساط', icon: 'fa-solid fa-users' },
-            { id: 'management', name: 'الإدارة', icon: 'fa-solid fa-layer-group' }
-        ],
+                modals: {
+                    checkoutModal: false,
+                    customerProfileModal: false,
+                    expenseModal: false,
+                    addCustomerModal: false,
+                    walletTransferModal: false
+                },
 
-        // ==========================================
-        // 2. INITIALIZATION & CORE FUNCTIONS
-        // ==========================================
-        init() {
-            // Offline/Online Listeners
-            window.addEventListener('online', () => { 
-                this.isOnline = true; 
-                this.syncOfflineQueue(); 
-            });
-            window.addEventListener('offline', () => {
-                this.isOnline = false;
-                this.showToast('أنت الآن في وضع عدم الاتصال', 'error');
-            });
-            
-            // Load offline queue from LocalStorage
-            const q = localStorage.getItem('2m_offline_queue');
-            if(q) this.offlineQueue = JSON.parse(q);
+                init() {
+                    // Offline/Online listener
+                    window.addEventListener('online', () => this.isOnline = true);
+                    window.addEventListener('offline', () => this.isOnline = false);
+                    
+                    // محاكاة وجود بيانات غير متزامنة في LocalStorage
+                    this.pendingSync = localStorage.getItem('erp_offline_queue') ? JSON.parse(localStorage.getItem('erp_offline_queue')).length : 2;
+                },
 
-            // Session check
-            const saved = localStorage.getItem('2m_session'); 
-            if (saved) { 
-                try { 
-                    this.user = JSON.parse(saved); 
-                    this.isLoggedIn = true; 
-                    this.fetchData(); 
-                } catch (e) { 
-                    this.logout(); 
-                } 
-            } 
-        },
+                openModal(modalName) {
+                    this.modals[modalName] = true;
+                    // منع التمرير في الخلفية عند فتح Modal
+                    document.body.style.overflow = 'hidden';
+                },
 
-        showToast(message, type = 'success') {
-            this.toast = { show: true, message, type };
-            setTimeout(() => { this.toast.show = false; }, 3000);
-        },
+                closeModal(modalName) {
+                    this.modals[modalName] = false;
+                    document.body.style.overflow = 'auto';
+                },
 
-        showConfirm(msg, onConfirm) {
-            if (confirm(msg)) onConfirm();
-        },
+                // خوارزمية حساب القسط للواجهة الأمامية
+                calculateInstallment() {
+                    let principal = this.totalAmount - (this.installmentDownPayment || 0);
+                    if (principal <= 0) return 0;
+                    
+                    let months = parseInt(this.installmentMonths);
+                    let monthlyRate = parseFloat(this.installmentInterest) / 100;
+                    
+                    // Simple interest calculation for demo (Can be changed to compound based on business logic)
+                    let totalInterest = principal * monthlyRate * months;
+                    let totalToPay = principal + totalInterest;
+                    
+                    return Math.round(totalToPay / months);
+                },
 
-        // ==========================================
-        // 3. API & OFFLINE SYNC LOGIC
-        // ==========================================
-        async callApi(action, dataObj) {
-            this.loading = true; 
-            try { 
-                const response = await fetch(API_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action, data: dataObj }) 
-                }); 
-                const res = await response.json(); 
-                this.loading = false; 
-                return res; 
-            } catch (error) { 
-                this.loading = false; 
-                this.showToast('خطأ في الاتصال بالخادم', 'error');
-                return { success: false, error: error.message }; 
-            } 
-        },
-
-        async safeCallApi(action, dataObj) {
-            if(!this.isOnline) {
-                // Queue the request if offline
-                this.offlineQueue.push({ action, data: dataObj, timestamp: Date.now() });
-                localStorage.setItem('2m_offline_queue', JSON.stringify(this.offlineQueue));
-                this.showToast('تم الحفظ محلياً لعدم وجود إنترنت', 'error');
-                return { success: true, offline: true };
-            }
-            return await this.callApi(action, dataObj);
-        },
-
-        async syncOfflineQueue() {
-            if(this.offlineQueue.length === 0 || !this.isOnline) return;
-            this.loading = true;
-            this.showToast('جاري مزامنة العمليات المحفوظة...');
-            
-            for (let item of [...this.offlineQueue]) {
-                try {
-                    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: item.action, data: item.data }) });
-                    this.offlineQueue.shift(); // Remove from queue only if successful
-                    localStorage.setItem('2m_offline_queue', JSON.stringify(this.offlineQueue));
-                } catch(e) { 
-                    break; // Stop syncing to maintain execution order
-                }
-            }
-            this.loading = false;
-            this.fetchData();
-        },
-
-        // ==========================================
-        // 4. AUTH & DATA FETCHING (Retained)
-        // ==========================================
-        async login() { 
-            if (!this.loginForm.username) return this.showToast("أدخل بيانات الدخول", "error"); 
-            const res = await this.callApi('login', this.loginForm); 
-            if (res && res.success) { 
-                this.user = res.user; 
-                this.isLoggedIn = true; 
-                localStorage.setItem('2m_session', JSON.stringify(res.user)); 
-                this.fetchData(); 
-            } else {
-                this.showToast("بيانات الدخول غير صحيحة", "error");
-            }
-        },
-        
-        logout() { 
-            localStorage.removeItem('2m_session'); 
-            location.reload(); 
-        },
-
-        async fetchData() { 
-            const res = await this.safeCallApi('getAllData'); 
-            if (res && !res.error) { 
-                this.data = res; 
-                const cash = (res.Settings || []).find(s => s.Key === "Shop_Cash"); 
-                this.shopCash = cash ? Number(cash.Value || 0) : 0;
-            } 
-        },
-
-        async updateShopCash() {
-            const currentCash = this.shopCash;
-            const newCashStr = prompt('قم بتحديث إجمالي النقدية في الدرج:', currentCash);
-            if(newCashStr !== null && !isNaN(newCashStr)) {
-                await this.safeCallApi('updateSetting', { key: 'Shop_Cash', value: Number(newCashStr) });
-                this.fetchData();
-                this.showToast('تم تحديث النقدية بالدرج');
-            }
-        },
-
-        // ==========================================
-        // 5. POS & CART LOGIC (Enhanced)
-        // ==========================================
-        get filteredInventoryPOS() {
-            let items = this.data.Inventory || [];
-            if (this.search) {
-                const s = this.search.toLowerCase();
-                items = items.filter(i => 
-                    (i.Product_Name && i.Product_Name.toLowerCase().includes(s)) || 
-                    (i.Code && i.Code.toString().includes(s))
-                );
-            }
-            if (this.posFilter === 'new') items = items.filter(i => i.Category === 'هاتف جديد');
-            if (this.posFilter === 'used') items = items.filter(i => i.Category === 'هاتف مستعمل');
-            return items;
-        },
-
-        get processedInventory() {
-            let items = this.data.Inventory || [];
-            if (this.invSearch) {
-                const s = this.invSearch.toLowerCase();
-                items = items.filter(i => (i.Product_Name && i.Product_Name.toLowerCase().includes(s)));
-            }
-            if (this.invFilter === 'shortages') {
-                items = items.filter(i => Number(i.Stock) <= Number(i.Min_Stock || 1));
-            }
-            return items;
-        },
-
-        addToCart(product) { 
-            if (product.Stock <= 0) return this.showToast('عفواً، نفد المخزن', 'error'); 
-            const item = this.cart.find(c => c.code === product.Code); 
-            if (item) {
-                if(item.qty >= product.Stock) return this.showToast('الحد الأقصى للمخزون', 'error');
-                item.qty++; 
-            } else {
-                this.cart.push({ code: product.Code, name: product.Product_Name, price: product.Selling_Price, qty: 1, cost: product.Cost_Price }); 
-            }
-            this.checkout.paid = this.netCartTotal(); 
-            this.showToast('تمت الإضافة للسلة');
-        },
-
-        get cartTotal() { return this.cart.reduce((s, i) => s + (i.price * i.qty), 0); },
-        netCartTotal() { return Math.max(0, this.cartTotal - (Number(this.checkout.discount) || 0)); },
-
-        // ==========================================
-        // 6. INSTALLMENTS & FINANCIAL MATH
-        // ==========================================
-        calculateInstallmentValue() {
-            let principal = this.netCartTotal() - (Number(this.checkout.paid) || 0);
-            if (principal <= 0) return 0;
-            let interest = principal * ((Number(this.checkout.interestRate) || 0) / 100);
-            let totalToPay = principal + interest;
-            let count = Number(this.checkout.months) || 1;
-            return Math.ceil(totalToPay / count);
-        },
-
-        generateInstallmentSchedule(instData) {
-            if(!instData) return [];
-            let count = Number(instData.Months || 1); 
-            let amount = Math.ceil((Number(instData.Total) - Number(instData.Paid)) / count);
-            let schedule = [];
-            let start = new Date(instData.Date || new Date());
-            
-            for(let i=1; i<=count; i++) {
-                let d = new Date(start);
-                // Assume monthly for simplicity unless durationCycle was saved
-                d.setMonth(d.getMonth() + i); 
-                let isLate = d < new Date() && (amount * i) > Number(instData.Paid);
-                schedule.push({ 
-                    date: d.toISOString().split('T')[0], 
-                    amount: amount, 
-                    status: isLate ? 'late' : 'pending' 
-                });
-            }
-            return schedule;
-        },
-
-        async confirmSaleAdvanced() {
-            if (!this.cart.length) return;
-            const finalTotal = this.netCartTotal();
-            
-            const saleData = { 
-                total: finalTotal, 
-                discount: this.checkout.discount,
-                paid: this.checkout.paid === '' ? finalTotal : this.checkout.paid, 
-                customer: this.checkout.customer || 'عميل نقدي', 
-                paymentType: this.checkout.type, 
-                Payment_Type: this.checkout.type, 
-                walletName: this.checkout.walletName, 
-                updateCashOrWallet: this.checkout.updateCashOrWallet, 
-                items: this.cart, 
-                user: this.user.username, 
-                // Installment specific data
-                months: this.checkout.months,
-                interestRate: this.checkout.interestRate,
-                durationCycle: this.checkout.durationCycle,
-                downpaymentType: this.checkout.downpaymentType
-            };
-            
-            this.showConfirm('تأكيد إتمام الفاتورة والعملية نهائياً؟', async () => {
-                const res = await this.safeCallApi('processSale', saleData);
-                if(res.success !== false) {
-                    this.cart = []; 
-                    this.showCart = false; 
-                    // Reset Checkout Form
-                    this.checkout = { customer: '', type: 'Cash', paid: '', discount: 0, walletName: '', updateCashOrWallet: true, months: 1, interestRate: 0, durationCycle: 'monthly', downpaymentType: 'Cash' }; 
-                    this.fetchData();
-                    this.showToast('تم تسجيل الفاتورة بنجاح');
-                }
-            });
-        },
-
-        // ==========================================
-        // 7. CRM & INSTALLMENT MANAGEMENT
-        // ==========================================
-        get activeInstallmentContracts() {
-            return (this.data.Sales || []).filter(s => s.Payment_Type === 'Installment' && (Number(s.Total) - Number(s.Paid)) > 0).reverse();
-        },
-        
-        getTotalRemainingInstallments() {
-            return this.activeInstallmentContracts.reduce((sum, s) => sum + (Number(s.Total) - Number(s.Paid)), 0);
-        },
-        
-        getLateInstallmentsCount() {
-            const now = new Date();
-            return this.activeInstallmentContracts.filter(s => {
-                let d = new Date(s.Date);
-                let diffTime = Math.abs(now - d);
-                let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                return diffDays > 30; // Flag as late if > 30 days old (Can be enhanced based on actual schedule array)
-            }).length;
-        },
-        
-        openInstallmentDetails(inst) {
-            this.selectedInstallment = inst;
-            this.showInstallmentDetailsModal = true;
-        },
-        
-        async paySingleInstallment(inst, amountToPay) {
-            this.showConfirm(`تأكيد تحصيل مبلغ ${amountToPay} ج من القسط؟`, async () => {
-                await this.safeCallApi('updateSalePayment', { saleId: inst.ID, paid: Number(inst.Paid) + amountToPay });
-                this.showInstallmentDetailsModal = false;
-                this.fetchData();
-                this.showToast('تم التحصيل بنجاح');
-            });
-        },
-
-        getCRMList() {
-            let clients = {};
-            (this.data.Sales || []).forEach(s => {
-                if(s.Customer && s.Customer !== 'عميل نقدي') {
-                    if(!clients[s.Customer]) clients[s.Customer] = { name: s.Customer, debt: 0, totalPurchases: 0 };
-                    clients[s.Customer].totalPurchases += Number(s.Total);
-                    if(['Credit', 'Installment'].includes(s.Payment_Type)) {
-                        clients[s.Customer].debt += Math.max(0, Number(s.Total) - Number(s.Paid));
+                confirmPayment() {
+                    if(!this.isOnline) {
+                        alert("تم حفظ العملية محلياً (Offline Queue). ستتم المزامنة عند عودة الاتصال.");
+                        this.pendingSync++;
+                    } else {
+                        alert("تم تسجيل العملية بنجاح في النظام السحابي.");
                     }
+                    this.closeModal('checkoutModal');
+                    this.activeTab = 'home';
                 }
-            });
-            return Object.values(clients);
-        },
-        
-        openCustomerProfile(cust) {
-            this.selectedCustomer = cust;
-            this.showCustomerProfileModal = true;
-        },
-        
-        getCustomerStats() {
-            if(!this.selectedCustomer) return { totalPurchases: 0, debt: 0 };
-            return this.getCRMList().find(c => c.name === this.selectedCustomer.name) || { totalPurchases: 0, debt: 0 };
-        },
-        
-        getCustomerHistory() {
-            if(!this.selectedCustomer) return [];
-            return (this.data.Sales || []).filter(s => s.Customer === this.selectedCustomer.name).reverse();
-        },
-
-        // ==========================================
-        // 8. DASHBOARD METRICS & FEED
-        // ==========================================
-        getTotalWalletBalance() {
-            return (this.data.Wallets || []).reduce((sum, w) => sum + Number(w.Balance || 0), 0);
-        },
-
-        getTotalSales(category = null) {
-            const today = new Date().toISOString().split('T')[0];
-            let sales = (this.data.Sales || []).filter(s => s.Date.startsWith(today));
-            // Category filtering logic can be expanded based on your item structure
-            return sales.reduce((sum, s) => sum + Number(s.Total || 0), 0);
-        },
-
-        getFilteredProfits() {
-            // Dummy structure for profit calculation. Will calculate from Cost vs Sell price.
-            let profits = { newPhone: 0, usedPhone: 0, general: 0, wallet: 0 };
-            (this.data.Sales || []).forEach(s => {
-                // Calculate logic here based on saved Items JSON in the Sale record
-                // For now, returning safe defaults to prevent UI crashes
-            });
-            return profits;
-        },
-
-        getRecentActivity() {
-            let feed = [];
-            (this.data.Sales || []).slice(-3).forEach(s => feed.push({ type: 'in', desc: 'فاتورة مبيعات - ' + s.Customer, time: s.Date.split('T')[0], amount: '+' + s.Total, icon: 'fa-solid fa-cart-shopping' }));
-            (this.data.Expenses || []).slice(-2).forEach(e => feed.push({ type: 'out', desc: 'مصروف - ' + (e.Description||''), time: e.Date.split('T')[0], amount: '-' + e.Amount, icon: 'fa-solid fa-money-bill-transfer' }));
-            return feed.sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
-        },
-
-        // ==========================================
-        // 9. HARDWARE/SCANNER BINDINGS (Retained)
-        // ==========================================
-        openScanner(mode) {
-            this.showToast('جاري فتح الكاميرا...', 'success');
-            // Original HTML5 QR Code integration logic goes here
-            // this handles barcodes for both POS and Product Entry
+                <!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2M ERP System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+            -webkit-tap-highlight-color: transparent;
         }
-    }
-}
-</script>
+        /* إخفاء شريط التمرير للحفاظ على شكل التطبيق */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        .modal-enter { transition: opacity 0.3s ease-out; }
+        .modal-enter-start { opacity: 0; }
+        .modal-enter-end { opacity: 1; }
+        .modal-leave { transition: opacity 0.2s ease-in; }
+        .modal-leave-start { opacity: 1; }
+        .modal-leave-end { opacity: 0; }
+    </style>
+</head>
+<body x-data="erpUI()" class="text-gray-800 antialiased h-screen flex flex-col overflow-hidden">
 
+    <div x-show="!isOnline || pendingSync > 0" class="bg-yellow-500 text-white text-xs font-bold px-4 py-1 flex justify-between items-center z-50">
+        <span x-text="!isOnline ? 'أنت في وضع عدم الاتصال (Offline)' : 'جاري المزامنة...' "></span>
+        <span x-show="pendingSync > 0" x-text="pendingSync + ' عمليات معلقة'"></span>
+        <i class="fas" :class="!isOnline ? 'fa-wifi-slash' : 'fa-sync fa-spin'"></i>
+    </div>
 
+    <header class="bg-blue-700 text-white shadow-md z-40 sticky top-0">
+        <div class="px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-layer-group text-xl"></i>
+                <h1 class="text-lg font-bold tracking-wide">2M ERP</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="text-left leading-tight">
+                    <p class="text-xs text-blue-200">نقدية المحل (Cash)</p>
+                    <p class="text-sm font-bold">24,500 ج.م</p>
+                </div>
+                <button class="bg-blue-600 p-2 rounded-full hover:bg-blue-500 transition">
+                    <i class="fas fa-bell"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto pb-20 relative">
+        
+        <section x-show="activeTab === 'home'" x-transition.opacity class="p-4 space-y-4">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">نظرة عامة اليوم</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                    <i class="fas fa-shopping-cart text-blue-500 text-2xl mb-2"></i>
+                    <span class="text-gray-500 text-sm">مبيعات اليوم</span>
+                    <span class="font-bold text-lg">12,400 ج</span>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                    <i class="fas fa-hand-holding-dollar text-green-500 text-2xl mb-2"></i>
+                    <span class="text-gray-500 text-sm">التحصيلات</span>
+                    <span class="font-bold text-lg">3,200 ج</span>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                    <i class="fas fa-users text-purple-500 text-2xl mb-2"></i>
+                    <span class="text-gray-500 text-sm">عملاء الأقساط</span>
+                    <span class="font-bold text-lg">45</span>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                    <i class="fas fa-triangle-exclamation text-red-500 text-2xl mb-2"></i>
+                    <span class="text-gray-500 text-sm">أقساط متأخرة</span>
+                    <span class="font-bold text-lg text-red-600">8</span>
+                </div>
+            </div>
+        </section>
+
+        <section x-show="activeTab === 'pos'" x-transition.opacity class="h-full flex flex-col bg-gray-50">
+            <div class="p-3 bg-white shadow-sm z-10">
+                <div class="relative">
+                    <input type="text" placeholder="ابحث بالاسم أو الباركود..." class="w-full bg-gray-100 rounded-lg pl-10 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <i class="fas fa-search absolute right-3 top-3.5 text-gray-400"></i>
+                    <button class="absolute left-3 top-2.5 text-blue-600 bg-blue-100 p-1 rounded">
+                        <i class="fas fa-barcode"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-3 pb-32">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 flex flex-col relative">
+                    <span class="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">المخزون: 12</span>
+                    <div class="h-20 bg-gray-200 rounded-md mb-2 flex items-center justify-center text-gray-400">
+                        <i class="fas fa-mobile-alt text-2xl"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-gray-700 line-clamp-1">Samsung Galaxy A54</h3>
+                    <p class="text-blue-600 font-bold mt-1">14,500 ج</p>
+                    <button class="mt-2 w-full bg-blue-50 text-blue-600 border border-blue-200 py-1.5 rounded-md text-sm font-bold hover:bg-blue-600 hover:text-white transition">
+                        <i class="fas fa-plus"></i> إضافة للسلة
+                    </button>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 flex flex-col relative">
+                    <span class="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">المخزون: 5</span>
+                    <div class="h-20 bg-gray-200 rounded-md mb-2 flex items-center justify-center text-gray-400">
+                        <i class="fas fa-headphones text-2xl"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-gray-700 line-clamp-1">AirPods Pro</h3>
+                    <p class="text-blue-600 font-bold mt-1">6,200 ج</p>
+                    <button class="mt-2 w-full bg-blue-50 text-blue-600 border border-blue-200 py-1.5 rounded-md text-sm font-bold hover:bg-blue-600 hover:text-white transition">
+                        <i class="fas fa-plus"></i> إضافة للسلة
+                    </button>
+                </div>
+            </div>
+
+            <div class="absolute bottom-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 pb-24 z-20">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-gray-600 font-bold">الإجمالي (2 عنصر)</span>
+                    <span class="text-xl font-bold text-blue-700">20,700 ج.م</span>
+                </div>
+                <button @click="openModal('checkoutModal')" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-blue-700 transition flex justify-center items-center gap-2">
+                    <i class="fas fa-cash-register"></i> إتمام الدفع
+                </button>
+            </div>
+        </section>
+
+        <section x-show="activeTab === 'crm'" x-transition.opacity class="p-4 bg-gray-50 min-h-full">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700">العملاء والمديونيات</h2>
+                <button @click="openModal('addCustomerModal')" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1">
+                    <i class="fas fa-user-plus"></i> عميل جديد
+                </button>
+            </div>
+
+            <div class="relative mb-4">
+                <input type="text" placeholder="ابحث برقم الهاتف أو الاسم..." class="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-10 py-2.5 focus:outline-none focus:border-blue-500 text-sm">
+                <i class="fas fa-search absolute right-3 top-3.5 text-gray-400"></i>
+            </div>
+
+            <div class="space-y-3">
+                <div @click="openModal('customerProfileModal')" class="bg-white p-3 rounded-xl shadow-sm border border-red-200 flex items-center justify-between active:scale-95 transition cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-red-100 text-red-600 w-10 h-10 rounded-full flex items-center justify-center font-bold">م</div>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-sm">محمود صالح نعمان</h3>
+                            <p class="text-xs text-gray-500">01012345678</p>
+                        </div>
+                    </div>
+                    <div class="text-left">
+                        <span class="block bg-red-100 text-red-700 text-xs px-2 py-1 rounded-md font-bold mb-1">متأخر: 1,500 ج</span>
+                        <span class="text-xs text-gray-500 font-bold">الباقي: 8,000 ج</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-95 transition cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-blue-100 text-blue-600 w-10 h-10 rounded-full flex items-center justify-center font-bold">د</div>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-sm">د. آية خالد</h3>
+                            <p class="text-xs text-gray-500">01198765432</p>
+                        </div>
+                    </div>
+                    <div class="text-left">
+                        <span class="block bg-green-100 text-green-700 text-xs px-2 py-1 rounded-md font-bold mb-1">منتظم</span>
+                        <span class="text-xs text-gray-500 font-bold">الباقي: 3,200 ج</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section x-show="activeTab === 'finance'" x-transition.opacity class="p-4 bg-gray-50 min-h-full">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">النظام المالي والمحافظ</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-sm font-bold text-gray-500 mb-2">المحافظ المتاحة</h3>
+                <div class="flex gap-3 overflow-x-auto pb-2 snap-x">
+                    <div class="min-w-[200px] bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 text-white shadow-md snap-center">
+                        <div class="flex justify-between items-start mb-2">
+                            <i class="fas fa-wallet text-2xl opacity-80"></i>
+                            <span class="text-xs bg-white/20 px-2 py-0.5 rounded">Vodafone Cash</span>
+                        </div>
+                        <h4 class="text-2xl font-bold mt-2">15,300 <span class="text-sm font-normal">ج.م</span></h4>
+                    </div>
+                    <div class="min-w-[200px] bg-gradient-to-r from-green-500 to-teal-500 rounded-xl p-4 text-white shadow-md snap-center">
+                        <div class="flex justify-between items-start mb-2">
+                            <i class="fas fa-building-columns text-2xl opacity-80"></i>
+                            <span class="text-xs bg-white/20 px-2 py-0.5 rounded">InstaPay / Bank</span>
+                        </div>
+                        <h4 class="text-2xl font-bold mt-2">42,000 <span class="text-sm font-normal">ج.م</span></h4>
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <button @click="openModal('walletTransferModal')" class="flex-1 bg-white border border-gray-200 text-gray-700 py-2 rounded-lg text-sm font-bold shadow-sm flex justify-center items-center gap-2">
+                        <i class="fas fa-exchange-alt text-blue-500"></i> تحويل رصيد
+                    </button>
+                    <button class="flex-1 bg-white border border-gray-200 text-gray-700 py-2 rounded-lg text-sm font-bold shadow-sm flex justify-center items-center gap-2">
+                        <i class="fas fa-arrow-down text-green-500"></i> إيداع
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-bold text-gray-500">سجل المصروفات</h3>
+                    <button @click="openModal('expenseModal')" class="text-blue-600 text-sm font-bold flex items-center gap-1">
+                        <i class="fas fa-plus-circle"></i> إضافة مصروف
+                    </button>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+                    <div class="p-3 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-orange-100 text-orange-500 p-2 rounded-lg"><i class="fas fa-bolt"></i></div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">فاتورة كهرباء</p>
+                                <p class="text-xs text-gray-400">اليوم، 10:30 صباحاً (من الخزنة)</p>
+                            </div>
+                        </div>
+                        <span class="text-red-500 font-bold text-sm">- 450 ج</span>
+                    </div>
+                    <div class="p-3 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-blue-100 text-blue-500 p-2 rounded-lg"><i class="fas fa-truck"></i></div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">مصاريف شحن بضاعة</p>
+                                <p class="text-xs text-gray-400">أمس (من Vodafone Cash)</p>
+                            </div>
+                        </div>
+                        <span class="text-red-500 font-bold text-sm">- 120 ج</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <nav class="bg-white border-t border-gray-200 fixed bottom-0 w-full z-30 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] pb-safe">
+        <ul class="flex justify-around items-center p-2">
+            <li>
+                <button @click="activeTab = 'home'" :class="activeTab === 'home' ? 'text-blue-600' : 'text-gray-400'" class="flex flex-col items-center p-2 w-16 transition">
+                    <i class="fas fa-chart-pie text-xl mb-1"></i>
+                    <span class="text-[10px] font-bold">الرئيسية</span>
+                </button>
+            </li>
+            <li>
+                <button @click="activeTab = 'pos'" :class="activeTab === 'pos' ? 'text-blue-600' : 'text-gray-400'" class="flex flex-col items-center p-2 w-16 transition">
+                    <i class="fas fa-store text-xl mb-1"></i>
+                    <span class="text-[10px] font-bold">المبيعات</span>
+                </button>
+            </li>
+            <li>
+                <button @click="activeTab = 'crm'" :class="activeTab === 'crm' ? 'text-blue-600' : 'text-gray-400'" class="flex flex-col items-center p-2 w-16 transition">
+                    <i class="fas fa-users text-xl mb-1"></i>
+                    <span class="text-[10px] font-bold">العملاء</span>
+                </button>
+            </li>
+            <li>
+                <button @click="activeTab = 'finance'" :class="activeTab === 'finance' ? 'text-blue-600' : 'text-gray-400'" class="flex flex-col items-center p-2 w-16 transition">
+                    <i class="fas fa-coins text-xl mb-1"></i>
+                    <span class="text-[10px] font-bold">المالية</span>
+                </button>
+            </li>
+            <li>
+                <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'text-blue-600' : 'text-gray-400'" class="flex flex-col items-center p-2 w-16 transition">
+                    <i class="fas fa-cog text-xl mb-1"></i>
+                    <span class="text-[10px] font-bold">الإعدادات</span>
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <div x-show="modals.checkoutModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50 transition-opacity" style="display: none;">
+        <div @click.away="closeModal('checkoutModal')" class="bg-white w-full sm:max-w-md sm:rounded-xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+             x-transition:enter="transition ease-out duration-300 transform"
+             x-transition:enter-start="translate-y-full opacity-0"
+             x-transition:enter-end="translate-y-0 opacity-100"
+             x-transition:leave="transition ease-in duration-200 transform"
+             x-transition:leave-start="translate-y-0 opacity-100"
+             x-transition:leave-end="translate-y-full opacity-0">
+            
+            <div class="px-4 py-3 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-lg text-gray-800">إتمام الدفع</h3>
+                <button @click="closeModal('checkoutModal')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto flex-1">
+                <h4 class="text-sm font-bold text-gray-500 mb-2">طريقة الدفع</h4>
+                <div class="grid grid-cols-4 gap-2 mb-4">
+                    <button @click="paymentMethod = 'cash'" :class="paymentMethod === 'cash' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200'" class="border rounded-lg py-2 text-xs font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-money-bill-wave text-lg"></i> كاش
+                    </button>
+                    <button @click="paymentMethod = 'wallet'" :class="paymentMethod === 'wallet' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200'" class="border rounded-lg py-2 text-xs font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-mobile-screen text-lg"></i> محفظة
+                    </button>
+                    <button @click="paymentMethod = 'credit'" :class="paymentMethod === 'credit' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200'" class="border rounded-lg py-2 text-xs font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-book text-lg"></i> آجل
+                    </button>
+                    <button @click="paymentMethod = 'installment'" :class="paymentMethod === 'installment' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200'" class="border rounded-lg py-2 text-xs font-bold transition flex flex-col items-center gap-1">
+                        <i class="fas fa-calendar-alt text-lg"></i> تقسيط
+                    </button>
+                </div>
+
+                <div x-show="paymentMethod === 'installment'" class="bg-green-50 p-3 rounded-lg border border-green-200 mb-4 space-y-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fas fa-calculator text-green-600"></i>
+                        <span class="font-bold text-green-800 text-sm">حاسبة الأقساط (Installment Engine)</span>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-600">ابحث عن العميل المشتري</label>
+                        <input type="text" placeholder="رقم هاتف أو اسم العميل..." class="w-full mt-1 border border-gray-300 rounded p-2 text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-gray-600">المقدم المدفوع (ج)</label>
+                            <input type="number" x-model="installmentDownPayment" class="w-full mt-1 border border-gray-300 rounded p-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600">مدة التقسيط (أشهر)</label>
+                            <select x-model="installmentMonths" class="w-full mt-1 border border-gray-300 rounded p-2 text-sm bg-white">
+                                <option value="6">6 أشهر</option>
+                                <option value="12">12 شهر</option>
+                                <option value="18">18 شهر</option>
+                                <option value="24">24 شهر</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-600">نسبة الفائدة الشهرية (%)</label>
+                        <input type="number" x-model="installmentInterest" value="3" class="w-full mt-1 border border-gray-300 rounded p-2 text-sm">
+                    </div>
+                    
+                    <div class="bg-white p-2 rounded border border-green-100 flex justify-between items-center mt-2">
+                        <span class="text-xs font-bold text-gray-600">القسط الشهري المتوقع:</span>
+                        <span class="font-bold text-green-700 text-lg" x-text="calculateInstallment() + ' ج'"></span>
+                    </div>
+                </div>
+
+                <div x-show="paymentMethod === 'cash' || paymentMethod === 'wallet'" class="mb-4">
+                    <label class="text-xs font-bold text-gray-600 mb-1 block">المبلغ المدفوع من العميل</label>
+                    <input type="number" placeholder="أدخل المبلغ..." class="w-full border border-gray-300 rounded-lg p-3 text-lg font-bold text-center">
+                </div>
+
+            </div>
+            
+            <div class="p-4 bg-white border-t border-gray-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-gray-500">الإجمالي المطلوب:</span>
+                    <span class="text-2xl font-bold text-blue-700">20,700 ج</span>
+                </div>
+                <button @click="confirmPayment" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-blue-700 transition">
+                    تأكيد وحفظ العملية
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="modals.customerProfileModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50 transition-opacity" style="display: none;">
+        <div @click.away="closeModal('customerProfileModal')" class="bg-white w-full sm:max-w-md sm:rounded-xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col h-full sm:h-auto"
+             x-transition:enter="transition ease-out duration-300 transform"
+             x-transition:enter-start="translate-y-full opacity-0"
+             x-transition:enter-end="translate-y-0 opacity-100"
+             x-transition:leave="transition ease-in duration-200 transform"
+             x-transition:leave-start="translate-y-0 opacity-100"
+             x-transition:leave-end="translate-y-full opacity-0">
+            
+            <div class="px-4 py-4 border-b bg-gray-50 flex justify-between items-start">
+                <div class="flex items-center gap-3">
+                    <div class="bg-red-100 text-red-600 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">م</div>
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800">محمود صالح نعمان</h3>
+                        <p class="text-sm text-gray-500"><i class="fas fa-phone-alt text-xs"></i> 01012345678</p>
+                    </div>
+                </div>
+                <button @click="closeModal('customerProfileModal')" class="text-gray-400 hover:text-red-500 bg-white rounded-full p-1"><i class="fas fa-times text-xl"></i></button>
+            </div>
+
+            <div class="p-4 overflow-y-auto flex-1 bg-gray-50 space-y-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 grid grid-cols-2 gap-4">
+                    <div>
+                        <span class="block text-xs text-gray-500 font-bold mb-1">إجمالي المديونية</span>
+                        <span class="text-lg font-bold text-gray-800">8,000 ج</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs text-red-500 font-bold mb-1"><i class="fas fa-exclamation-circle"></i> متأخرات</span>
+                        <span class="text-lg font-bold text-red-600">1,500 ج</span>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <h4 class="text-sm font-bold text-blue-800 mb-2">تسجيل دفعة جديدة</h4>
+                    <div class="flex gap-2">
+                        <input type="number" placeholder="المبلغ..." class="flex-1 border border-blue-200 rounded p-2 text-sm">
+                        <button class="bg-blue-600 text-white px-4 rounded text-sm font-bold hover:bg-blue-700">تحصيل</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-sm font-bold text-gray-600 mb-2">جدول الأقساط المتبقية</h4>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+                        <div class="p-3 flex justify-between items-center bg-red-50">
+                            <div>
+                                <p class="text-sm font-bold text-red-700">قسط شهر مارس (متأخر)</p>
+                                <p class="text-xs text-red-500">مستحق في: 01/03/2026</p>
+                            </div>
+                            <span class="font-bold text-red-700">1,500 ج</span>
+                        </div>
+                        <div class="p-3 flex justify-between items-center">
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">قسط شهر أبريل</p>
+                                <p class="text-xs text-gray-500">مستحق في: 01/04/2026</p>
+                            </div>
+                            <span class="font-bold text-gray-700">1,500 ج</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="modals.expenseModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity p-4" style="display: none;">
+        <div @click.away="closeModal('expenseModal')" class="bg-white w-full max-w-sm rounded-xl shadow-2xl overflow-hidden"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                <h3 class="font-bold text-gray-800">تسجيل مصروف جديد</h3>
+                <button @click="closeModal('expenseModal')" class="text-gray-400"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 space-y-3">
+                <div>
+                    <label class="text-xs font-bold text-gray-600 block mb-1">المبلغ</label>
+                    <input type="number" class="w-full border border-gray-300 rounded p-2" placeholder="0.00">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600 block mb-1">البيان / السبب</label>
+                    <input type="text" class="w-full border border-gray-300 rounded p-2" placeholder="مثال: ضيافة، كهرباء...">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600 block mb-1">الخصم من</label>
+                    <select class="w-full border border-gray-300 rounded p-2 bg-white text-sm">
+                        <option value="cash">نقدية المحل (الخزنة)</option>
+                        <option value="wallet_vodafone">Vodafone Cash</option>
+                    </select>
+                </div>
+            </div>
+            <div class="p-4 border-t bg-gray-50">
+                <button @click="closeModal('expenseModal')" class="w-full bg-red-500 text-white font-bold py-2 rounded shadow hover:bg-red-600">حفظ وخصم الرصيد</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('erpUI', () => ({
+                activeTab: 'home', // 'home', 'pos', 'crm', 'finance', 'settings'
+                isOnline: navigator.onLine,
+                pendingSync: 0,
+                paymentMethod: 'cash',
+                
+                // Installment logic variables
+                installmentDownPayment: 5000,
+                installmentMonths: 12,
+                installmentInterest: 3,
+                totalAmount: 20700,
+
+                modals: {
+                    checkoutModal: false,
+                    customerProfileModal: false,
+                    expenseModal: false,
+                    addCustomerModal: false,
+                    walletTransferModal: false
+                },
+
+                init() {
+                    // Offline/Online listener
+                    window.addEventListener('online', () => this.isOnline = true);
+                    window.addEventListener('offline', () => this.isOnline = false);
+                    
+                    // محاكاة وجود بيانات غير متزامنة في LocalStorage
+                    this.pendingSync = localStorage.getItem('erp_offline_queue') ? JSON.parse(localStorage.getItem('erp_offline_queue')).length : 2;
+                },
+
+                openModal(modalName) {
+                    this.modals[modalName] = true;
+                    // منع التمرير في الخلفية عند فتح Modal
+                    document.body.style.overflow = 'hidden';
+                },
+
+                closeModal(modalName) {
+                    this.modals[modalName] = false;
+                    document.body.style.overflow = 'auto';
+                },
+
+                // خوارزمية حساب القسط للواجهة الأمامية
+                calculateInstallment() {
+                    let principal = this.totalAmount - (this.installmentDownPayment || 0);
+                    if (principal <= 0) return 0;
+                    
+                    let months = parseInt(this.installmentMonths);
+                    let monthlyRate = parseFloat(this.installmentInterest) / 100;
+                    
+                    // Simple interest calculation for demo (Can be changed to compound based on business logic)
+                    let totalInterest = principal * monthlyRate * months;
+                    let totalToPay = principal + totalInterest;
+                    
+                    return Math.round(totalToPay / months);
+                },
+
+                confirmPayment() {
+                    if(!this.isOnline) {
+                        alert("تم حفظ العملية محلياً (Offline Queue). ستتم المزامنة عند عودة الاتصال.");
+                        this.pendingSync++;
+                    } else {
+                        alert("تم تسجيل العملية بنجاح في النظام السحابي.");
+                    }
+                    this.closeModal('checkoutModal');
+                    this.activeTab = 'home';
+                }
+            }));
+        });
+    </script>
+</body>
+</html>
+
+            }));
+        });
+    </script>
+</body>
+</html>
