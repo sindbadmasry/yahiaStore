@@ -240,10 +240,14 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
                         <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl z-10"><i class="fa-solid fa-book-journal-whills"></i></div>
                         <span class="font-black text-slate-800 text-xs text-center z-10">الحسابات العامة</span>
                     </button>
-                    <button @click="managementView = 'purchases'" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:border-amber-300 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 active:scale-95 relative overflow-hidden">
-                        <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-3xl z-10"><i class="fa-solid fa-truck-fast"></i></div>
-                        <span class="font-black text-slate-800 text-xs text-center z-10">المشتريات والموردين</span>
-                    </button>
+                   <button @click="managementView = 'purchases'" 
+        class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:border-amber-300 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 active:scale-95 relative overflow-hidden group">
+    <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-3xl z-10 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
+        <i class="fa-solid fa-truck-fast"></i>
+    </div>
+    <span class="font-black text-slate-800 text-[11px] text-center z-10">المشتريات والموردين</span>
+    <div class="absolute inset-0 bg-gradient-to-br from-amber-50/0 to-amber-50/40 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</button>
                     <button @click="managementView = 'wallets'" class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:border-emerald-300 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 active:scale-95 relative overflow-hidden">
                         <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl z-10"><i class="fa-solid fa-wallet"></i></div>
                         <span class="font-black text-slate-800 text-xs text-center z-10">المحافظ الإلكترونية</span>
