@@ -321,38 +321,74 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
             </div>
 
             <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-slate-50 relative pb-safe-area">
+                <div x-show="managementView === 'inventory'" class="h-full flex flex-col bg-slate-50 relative pb-20">
+    <div class="px-4 pt-4 pb-3 flex-shrink-0 bg-white shadow-sm z-10 sticky top-0 border-b border-slate-100">
+        <div class="relative">
+            <input type="text" x-model="invSearch" placeholder="بحث باسم المنتج أو الباركود..." class="w-full p-4 pr-14 bg-slate-50 border border-slate-200 rounded-2xl font-black text-sm outline-none focus:border-purple-500 focus:bg-white transition-all shadow-inner">
+            <i class="fa-solid fa-search absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+            <button @click="openScanner('invSearch')" class="absolute left-2 top-[6px] bottom-[6px] w-12 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-purple-600 shadow-sm active:scale-95 transition-transform hover:bg-purple-50">
+                <i class="fa-solid fa-qrcode text-xl"></i>
+            </button>
+        </div>
+
+        <div class="flex gap-2 mt-4 overflow-x-auto custom-scrollbar pb-1">
+            <button @click="invFilter = 'all'" :class="invFilter === 'all' ? 'bg-purple-600 text-white shadow-md shadow-purple-200' : 'bg-white text-slate-500 border border-slate-200'" class="px-6 py-2.5 rounded-xl text-xs font-black whitespace-nowrap active:scale-95 transition-all">جميع المنتجات</button>
+            <button @click="invFilter = 'shortages'" :class="invFilter === 'shortages' ? 'bg-rose-500 text-white shadow-md shadow-rose-200' : 'bg-white text-slate-500 border border-slate-200'" class="px-6 py-2.5 rounded-xl text-xs font-black whitespace-nowrap active:scale-95 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation" :class="invFilter === 'shortages' ? 'animate-pulse' : ''"></i> النواقص
+            </button>
+        </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+        <template x-for="item in processedInventory" :key="item.Code || item.Product_Name">
+            <div class="bg-white p-4 rounded-2xl border shadow-sm flex flex-col gap-3 transition-all relative overflow-hidden" :class="(Number(item.Stock) <= Number(item.Min_Stock || 1)) ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 hover:border-purple-300 hover:shadow-md'">
                 
-                <div x-show="managementView === 'inventory'" class="h-full flex flex-col space-y-4">
-                    <div class="relative flex-shrink-0">
-                        <input type="text" x-model="invSearch" placeholder="ابحث باسم المنتج أو الباركود..." class="w-full p-4 pr-12 bg-white border border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-purple-500 transition-colors shadow-sm">
-                        <i class="fa-solid fa-search absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    </div>
-
-                    <div class="flex gap-2 overflow-x-auto custom-scrollbar pb-2 flex-shrink-0">
-                        <button @click="invFilter = 'all'" :class="invFilter === 'all' ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 border border-slate-200'" class="px-5 py-2.5 rounded-xl text-xs font-black whitespace-nowrap shadow-sm active:scale-95 transition-all">الكل</button>
-                        <button @click="invFilter = 'shortages'" :class="invFilter === 'shortages' ? 'bg-rose-500 text-white' : 'bg-white text-slate-500 border border-slate-200'" class="px-5 py-2.5 rounded-xl text-xs font-black whitespace-nowrap shadow-sm active:scale-95 transition-all">النواقص</button>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto space-y-3 custom-scrollbar pb-20">
-                        <template x-for="item in processedInventory">
-                            <div class="bg-white p-4 rounded-2xl border shadow-sm flex flex-col gap-2 transition-colors" :class="(item.Stock <= (item.Min_Stock || 1)) ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200'">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h4 class="font-black text-sm text-slate-800" x-text="item.Product_Name"></h4>
-                                        <p class="text-[10px] font-bold text-slate-500 mt-1"><i class="fa-solid fa-barcode ml-1"></i> <span x-text="item.Code"></span></p>
-                                    </div>
-                                    <span class="text-[10px] font-black px-3 py-1.5 rounded-xl" :class="(item.Stock <= (item.Min_Stock || 1)) ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'" x-text="item.Stock + ' متاح'"></span>
-                                </div>
-                                <div class="grid grid-cols-2 gap-2 mt-2 pt-3 border-t border-slate-100 text-[10px]">
-                                    <template x-if="user.role === 'admin'">
-                                        <div><span class="text-slate-400 font-bold block mb-1">سعر التكلفة:</span><span class="font-black text-slate-800 text-xs" x-text="item.Cost_Price + ' ج'"></span></div>
-                                    </template>
-                                    <div><span class="text-slate-400 font-bold block mb-1">سعر البيع:</span><span class="font-black text-purple-600 text-xs" x-text="item.Selling_Price + ' ج'"></span></div>
-                                </div>
-                            </div>
-                        </template>
+                <div x-show="(Number(item.Stock) <= Number(item.Min_Stock || 1))" class="absolute top-0 right-0 bg-rose-500 text-white text-[9px] font-black px-4 py-1.5 rounded-bl-xl shadow-sm animate-pulse z-10 flex items-center gap-1">
+                    <i class="fa-solid fa-bell"></i> أوشك على النفاد
+                </div>
+                
+                <div class="flex justify-between items-start mt-1 relative z-0">
+                    <div class="flex-1 pl-2">
+                        <h4 class="font-black text-sm text-slate-800 leading-relaxed" x-text="item.Product_Name"></h4>
+                        <div class="flex flex-wrap items-center gap-2 mt-2">
+                            <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg flex items-center gap-1"><i class="fa-solid fa-barcode text-slate-400"></i> <span x-text="item.Code"></span></span>
+                            <span class="text-[10px] font-black text-purple-700 bg-purple-100 px-2 py-1 rounded-lg" x-text="item.Category"></span>
+                        </div>
                     </div>
                 </div>
+                
+                <div class="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100 mt-2">
+                    <div class="text-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                        <span class="text-slate-400 font-bold block text-[9px] mb-1">الكمية المتاحة</span>
+                        <span class="font-black text-sm" :class="(Number(item.Stock) <= Number(item.Min_Stock || 1)) ? 'text-rose-600' : 'text-emerald-600'" x-text="item.Stock"></span>
+                    </div>
+                    <div class="text-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm" x-show="user.role === 'admin'">
+                        <span class="text-slate-400 font-bold block text-[9px] mb-1">سعر التكلفة</span>
+                        <span class="font-black text-slate-800 text-xs tabular-nums" x-text="Number(item.Cost_Price || 0).toLocaleString() + ' ج'"></span>
+                    </div>
+                    <div class="text-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                        <span class="text-slate-400 font-bold block text-[9px] mb-1">سعر البيع</span>
+                        <span class="font-black text-purple-600 text-xs tabular-nums" x-text="Number(item.Selling_Price || 0).toLocaleString() + ' ج'"></span>
+                    </div>
+                </div>
+
+                <button @click="openProductModal(item.Category); pForm = {...item}; isEditingProduct = true;" class="w-full py-3 bg-white border border-slate-200 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 text-slate-600 rounded-xl text-xs font-black active:scale-95 transition-all shadow-sm flex items-center justify-center gap-2 mt-1">
+                    <i class="fa-solid fa-pen-to-square"></i> تعديل تفاصيل المنتج
+                </button>
+            </div>
+        </template>
+        
+        <div x-show="processedInventory.length === 0" class="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-200 mt-4 shadow-sm">
+            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 text-4xl shadow-inner"><i class="fa-solid fa-box-open"></i></div>
+            <p class="text-slate-500 font-black text-sm">لا توجد منتجات تطابق بحثك حالياً.</p>
+        </div>
+    </div>
+
+    <button x-show="user.role === 'admin'" @click="openProductModal('صنف عام')" class="absolute bottom-6 left-6 w-16 h-16 bg-purple-600 text-white rounded-full shadow-xl shadow-purple-600/40 flex items-center justify-center text-2xl active:scale-90 transition-all z-20 border-4 border-slate-50 hover:bg-purple-700">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+</div>
+
 
                 <div x-show="managementView === 'installments'" class="h-full flex flex-col space-y-4">
                     <div class="grid grid-cols-2 gap-3 flex-shrink-0">
@@ -837,33 +873,86 @@ body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparen
         </div>
 </div>
 
-<div x-show="showProductModal" x-cloak class="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="w-full max-w-lg bg-white rounded-[2.5rem] p-6 max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl">
-        <h3 class="text-xl font-black mb-5 text-slate-800 border-b pb-4" x-text="isEditingProduct ? 'تعديل منتج' : 'إضافة منتج للمخزن'"></h3>
-        <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-3 relative">
+<div x-show="showProductModal" x-cloak class="fixed inset-0 z-[6000] bg-slate-900/60 backdrop-blur-md flex items-end md:items-center justify-center sm:p-4" 
+     x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" 
+     x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    
+    <div class="w-full max-w-lg bg-white rounded-t-[2.5rem] md:rounded-[2.5rem] p-6 max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl relative" @click.stop 
+         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-y-full md:translate-y-10 opacity-0" x-transition:enter-end="translate-y-0 opacity-100" 
+         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-y-0 opacity-100" x-transition:leave-end="translate-y-full md:translate-y-10 opacity-0">
+        
+        <div class="w-14 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 md:hidden"></div>
+
+        <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+            <h3 class="text-xl font-black text-slate-800 flex items-center gap-3">
+                <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-box"></i></div>
+                <span x-text="isEditingProduct ? 'تعديل بيانات المنتج' : 'إضافة منتج جديد'"></span>
+            </h3>
+            <button @click="showProductModal = false" class="w-10 h-10 bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 rounded-full flex items-center justify-center active:scale-95 transition-all"><i class="fa-solid fa-times text-lg"></i></button>
+        </div>
+        
+        <div class="space-y-5">
+            <div class="grid grid-cols-2 gap-4 relative">
+                
                 <div class="relative col-span-2">
-                    <input type="text" x-model="pForm.Code" @input="checkExistingProduct()" placeholder="باركود / كود *" class="w-full p-4 pr-4 pl-12 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:border-blue-500">
-                    <button @click="openScanner('pForm.Code')" class="absolute left-2 top-1/2 -translate-y-1/2 text-blue-600 bg-blue-50 w-8 h-8 rounded-lg flex items-center justify-center"><i class="fa-solid fa-qrcode"></i></button>
+                    <label class="text-[11px] font-black text-slate-500 block mb-2 ml-1"><i class="fa-solid fa-barcode text-purple-500 ml-1"></i> كود المنتج / الباركود *</label>
+                    <input type="text" x-model="pForm.Code" @input="checkExistingProduct()" placeholder="امسح الباركود أو أدخل الكود يدوياً" class="w-full p-4 pr-4 pl-16 bg-slate-50 border border-slate-200 rounded-2xl font-black text-sm outline-none focus:border-purple-500 focus:bg-white transition-all shadow-inner">
+                    <button @click="openScanner('pForm.Code')" class="absolute left-2 top-[32px] bottom-[8px] w-12 text-purple-600 bg-white border border-purple-100 rounded-xl flex items-center justify-center shadow-sm active:scale-95 transition-all hover:bg-purple-50"><i class="fa-solid fa-qrcode text-xl"></i></button>
                 </div>
-                <input type="text" x-model="pForm.Product_Name" placeholder="اسم المنتج *" class="col-span-2 p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:border-blue-500">
-                <select x-model="pForm.Category" class="col-span-2 p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none">
-                    <option value="صنف عام">صنف عام (اكسسوار/أخرى)</option>
-                    <option value="هاتف جديد">هاتف جديد</option>
-                    <option value="هاتف مستعمل">هاتف مستعمل</option>
-                </select>
-                <input type="number" min="0" x-model.number="pForm.Cost_Price" placeholder="التكلفة" class="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none">
-                <input type="number" min="0" x-model.number="pForm.Selling_Price" placeholder="سعر البيع *" class="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none text-blue-600">
-                <input type="number" min="0" x-model.number="pForm.Stock" placeholder="الكمية *" class="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none">
-                <input type="number" min="1" x-model.number="pForm.Min_Stock" placeholder="حد الطلب (للنواقص)" class="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none">
+
+                <div class="col-span-2">
+                    <label class="text-[11px] font-black text-slate-500 block mb-2 ml-1">اسم المنتج *</label>
+                    <input type="text" x-model="pForm.Product_Name" placeholder="أدخل اسم المنتج بدقة" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-sm outline-none focus:border-purple-500 focus:bg-white transition-all shadow-inner">
+                </div>
+
+                <div class="col-span-2">
+                    <label class="text-[11px] font-black text-slate-500 block mb-2 ml-1">تصنيف المنتج *</label>
+                    <div class="relative">
+                        <select x-model="pForm.Category" class="w-full p-4 pr-4 pl-10 bg-slate-50 border border-slate-200 rounded-2xl font-black text-sm outline-none focus:border-purple-500 focus:bg-white transition-all shadow-inner appearance-none cursor-pointer">
+                            <option value="صنف عام">صنف عام (اكسسوار / شواحن / أخرى)</option>
+                            <option value="هاتف جديد">هاتف جديد</option>
+                            <option value="هاتف مستعمل">هاتف مستعمل</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div class="col-span-1">
+                    <label class="text-[11px] font-black text-slate-500 block mb-2 ml-1">الكمية الحالية *</label>
+                    <input type="number" min="0" x-model.number="pForm.Stock" placeholder="0" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-base outline-none focus:border-purple-500 focus:bg-white transition-all shadow-inner text-center">
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[11px] font-black text-rose-500 block mb-2 ml-1">حد النواقص (التنبيه)</label>
+                    <input type="number" min="1" x-model.number="pForm.Min_Stock" placeholder="1" class="w-full p-4 bg-rose-50/50 border border-rose-200 rounded-2xl font-black text-base outline-none focus:border-rose-500 focus:bg-white transition-all shadow-inner text-center text-rose-600">
+                </div>
+
+                <div class="col-span-1">
+                    <label class="text-[11px] font-black text-slate-500 block mb-2 ml-1">سعر التكلفة (شراء)</label>
+                    <div class="relative">
+                        <input type="number" min="0" x-model.number="pForm.Cost_Price" placeholder="0" class="w-full p-4 pl-8 bg-slate-50 border border-slate-200 rounded-2xl font-black text-sm outline-none focus:border-purple-500 focus:bg-white transition-all shadow-inner text-center">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">ج</span>
+                    </div>
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[11px] font-black text-emerald-600 block mb-2 ml-1">سعر البيع للجمهور *</label>
+                    <div class="relative">
+                        <input type="number" min="0" x-model.number="pForm.Selling_Price" placeholder="0" class="w-full p-4 pl-8 bg-emerald-50/30 border border-emerald-200 rounded-2xl font-black text-sm outline-none focus:border-emerald-500 focus:bg-white transition-all shadow-inner text-center text-emerald-700">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-500">ج</span>
+                    </div>
+                </div>
             </div>
-            <div class="flex gap-2 pt-4 border-t border-slate-100">
-                <button @click="saveProduct()" :disabled="loading || !pForm.Code || !pForm.Product_Name || !pForm.Selling_Price" class="flex-1 py-4 bg-blue-600 text-white disabled:opacity-50 rounded-xl font-black shadow-md active:scale-95" x-text="loading ? 'جاري الحفظ...' : (isEditingProduct ? 'حفظ التعديلات' : 'إضافة للمخزن')"></button>
-                <button @click="showProductModal = false" class="px-6 py-4 bg-slate-100 text-slate-500 rounded-xl font-black active:scale-95">إلغاء</button>
+
+            <div class="flex gap-3 pt-6 mt-4 border-t border-slate-100">
+                <button @click="saveProduct()" :disabled="loading || !pForm.Code || !pForm.Product_Name || !pForm.Selling_Price" class="flex-[2] py-4 bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-black text-sm shadow-lg shadow-purple-200 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid" :class="loading ? 'fa-spinner fa-spin' : (isEditingProduct ? 'fa-check-double' : 'fa-plus')"></i>
+                    <span x-text="loading ? 'جاري الحفظ...' : (isEditingProduct ? 'حفظ التعديلات' : 'إضافة للمخزن')"></span>
+                </button>
+                <button @click="showProductModal = false" class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl font-black text-sm active:scale-95 transition-all">إلغاء</button>
             </div>
         </div>
     </div>
 </div>
+
 
 <div x-show="showMaintenanceModal" x-cloak class="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="w-full max-w-sm bg-white rounded-[2.5rem] p-6 shadow-2xl">
